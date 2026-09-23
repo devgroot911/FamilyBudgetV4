@@ -372,50 +372,202 @@ function render() {
 function renderDashboard() {
   var cm = currentMonth();
   var visibleExpenses = getVisibleExpenses();
-  var totalSpent = visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; }).reduce(function(s, i) { return s + Number(i.total); }, 0);
+  var role = (sessionStorage.getItem('role') || '').toLowerCase();
+  var isManager = role.indexOf('admin') !== -1 || role.indexOf('director') !== -1 || role.indexOf('accountant') !== -1 || role.indexOf('assistant') !== -1;
+  var isAdminUser = role.indexOf('admin') !== -1;
+
+  var currentMonthExpenses = visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; });
+  var totalSpent = currentMonthExpenses.reduce(function(s, i) { return s + Number(i.total); }, 0);
   var totalAllowance = categories.reduce(function(s, c) { return s + allowance(c.id); }, 0);
   var remaining = totalAllowance - totalSpent;
   var recent = visibleExpenses.slice().sort(function(a, b) { return b.date.localeCompare(a.date); }).slice(0, 10);
-  var maxSpent = Math.max.apply(null, categories.map(function(c) { return spent(c.id); }).concat([1]));
-  var role = (sessionStorage.getItem('role') || '').toLowerCase();
-  var isAdminUser = role.indexOf('admin') !== -1;
+  var todaySpent = visibleExpenses.filter(function(i) { return i.date === today(); }).reduce(function(s, i) { return s + Number(i.total); }, 0);
+  
+  var html = (isAdminUser ? '<div style="text-align:right;margin-bottom:10px"><button class="primary-button" data-action="refresh-dashboard">&#x21bb; Refresh Data</button></div>' : '');
 
-  document.querySelector('#view-dashboard').innerHTML =
-    // Refresh button for admin at top
-    (isAdminUser ? '<div style="text-align:right;margin-bottom:10px"><button class="primary-button" data-action="refresh-dashboard">&#x21bb; Refresh Data</button></div>' : '') +
-    '<div class="grid stats-grid">' +
-      '<div class="panel stat-card"><span class="stat-label">Spent this month</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">' + visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; }).length + ' recorded entries</div></div>' +
+  if (!isManager) {
+    // --- MOTHER VIEW ---
+    html += '<div class="grid stats-grid">' +
+      '<div class="panel stat-card"><span class="stat-label">Spent this month</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">' + currentMonthExpenses.length + ' entries</div></div>' +
       '<div class="panel stat-card"><span class="stat-label">Available balance</span><div class="stat-value">' + money(remaining) + '</div><div class="stat-note">Against current allowances</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Today</span><div class="stat-value">' + money(visibleExpenses.filter(function(i) { return i.date === today(); }).reduce(function(s, i) { return s + Number(i.total); }, 0)) + '</div><div class="stat-note">' + visibleExpenses.filter(function(i) { return i.date === today(); }).length + ' entries today</div></div>' +
+      '<div class="panel stat-card"><span class="stat-label">Today</span><div class="stat-value">' + money(todaySpent) + '</div><div class="stat-note">' + visibleExpenses.filter(function(i) { return i.date === today(); }).length + ' entries today</div></div>' +
       '<div class="panel stat-card"><span class="stat-label">Catalog items</span><div class="stat-value">' + state.items.length + '</div><div class="stat-note">Available for quick entry</div></div>' +
-    '</div>' +
-    '<div class="grid two-col content-gap">' +
+    '</div>';
+
+    html += '<div class="grid two-col content-gap">' +
       '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Spending rhythm</h2><small>Current month by category</small></div><button class="ghost-button" data-view="records">View ledger</button></div>' +
-        '<div class="chart">' + categories.map(function(c) { return '<div class="bar-wrap"><div class="bar" style="height:' + Math.max(5, spent(c.id) / maxSpent * 100) + '%" title="' + money(spent(c.id)) + '"></div><span class="bar-label">' + c.name + '</span></div>'; }).join('') + '</div>' +
-        '<div class="grid three-col" style="margin-top:16px">' + categories.map(function(c) { return '<div><span class="muted">' + c.name + '</span><br><strong>' + money(spent(c.id)) + '</strong></div>'; }).join('') + '</div>' +
+        '<div class="section-heading"><div><h2>Category Spending</h2><small>Where is your money going?</small></div></div>' +
+        '<div class="chart-container"><canvas id="mother-donut-chart"></canvas></div>' +
       '</div>' +
       '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Allowance health</h2><small>' + cm + '</small></div><button class="ghost-button" data-view="allowances">Edit</button></div>' +
+        '<div class="section-heading"><div><h2>Budget Progress</h2><small>' + cm + '</small></div></div>' +
         categories.map(function(c, i) {
           var budget = allowance(c.id) || 0;
-            var v = spent(c.id);
-            var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
-            return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + money(v) + ' / ' + money(budget) + '</span></div><div class="progress-track"><div class="progress-fill' + (i === 1 ? ' mint' : i === 2 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div></div>';
+          var v = spent(c.id);
+          var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
+          return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + money(v) + ' / ' + money(budget) + '</span></div><div class="progress-track"><div class="progress-fill' + (i === 1 ? ' mint' : i === 2 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div></div>';
         }).join('') +
       '</div>' +
-    '</div>' +
-    '<div class="panel content-gap">' +
-      '<div class="section-heading"><div><h2>Recent activity</h2><small>Latest saved entries</small></div><button class="primary-button" data-view="expenses">+ Add expense</button></div>' +
-      '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Category</th><th>User</th><th>Date</th><th>Qty</th><th>Amount</th><th></th></tr></thead><tbody>' +
-      (recent.length ? recent.map(function(e) {
-        return '<tr><td><strong>' + escapeHtml(e.name) + '</strong>' + getTranslationsHtml(e.name) + '<br><span class="muted">' + subcat(e.subcategory) + '</span></td><td><span class="category-dot ' + cat(e.category).color + '"></span>' + cat(e.category).name + '</td><td>' + escapeHtml(e.user || 'Unknown') + '</td><td>' + e.date + '</td><td>' + e.quantity + '</td><td class="amount">' + money(e.total) + '</td><td><button class="ghost-button" data-delete-expense="' + e.id + '">Delete</button></td></tr>';
-      }).join('') : '<tr><td colspan="7" class="empty">No expense entries yet.</td></tr>') +
-      '</tbody></table></div>' +
     '</div>';
+
+    html += '<div class="panel content-gap">' +
+      '<div class="section-heading"><div><h2>Daily Spending Trend</h2><small>Cumulative expenses this month</small></div></div>' +
+      '<div class="chart-container"><canvas id="mother-line-chart"></canvas></div>' +
+    '</div>';
+  } else {
+    // --- MANAGER VIEW ---
+    var usersCount = [...new Set(currentMonthExpenses.map(function(e) { return e.user; }))].length;
+    html += '<div class="grid stats-grid">' +
+      '<div class="panel stat-card"><span class="stat-label">Total Village Spend</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">This month</div></div>' +
+      '<div class="panel stat-card"><span class="stat-label">Village Allowance</span><div class="stat-value">' + money(totalAllowance) + '</div><div class="stat-note">Total allocated</div></div>' +
+      '<div class="panel stat-card"><span class="stat-label">Active Mothers</span><div class="stat-value">' + usersCount + '</div><div class="stat-note">Entered data this month</div></div>' +
+      '<div class="panel stat-card"><span class="stat-label">Total Entries</span><div class="stat-value">' + currentMonthExpenses.length + '</div><div class="stat-note">This month</div></div>' +
+    '</div>';
+
+    html += '<div class="grid two-col content-gap">' +
+      '<div class="panel">' +
+        '<div class="section-heading"><div><h2>Mother Comparison</h2><small>Spend by user</small></div></div>' +
+        '<div class="chart-container"><canvas id="manager-bar-chart"></canvas></div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<div class="section-heading"><div><h2>Category Breakdown</h2><small>Village-wide category spend</small></div></div>' +
+        '<div class="chart-container"><canvas id="manager-pie-chart"></canvas></div>' +
+      '</div>' +
+    '</div>';
+
+    html += '<div class="panel content-gap">' +
+      '<div class="section-heading"><div><h2>Village Spending Trend</h2><small>Cumulative vs Allowance</small></div></div>' +
+      '<div class="chart-container"><canvas id="manager-line-chart"></canvas></div>' +
+    '</div>';
+  }
+
+  // Recent activity table (for both)
+  html += '<div class="panel content-gap">' +
+    '<div class="section-heading"><div><h2>Recent Activity</h2><small>Latest saved entries</small></div>' + (!isManager ? '<button class="primary-button" data-view="expenses">+ Add expense</button>' : '') + '</div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Category</th><th>User</th><th>Date</th><th>Qty</th><th>Amount</th><th></th></tr></thead><tbody>' +
+    (recent.length ? recent.map(function(e) {
+      return '<tr><td><strong>' + escapeHtml(e.name) + '</strong>' + getTranslationsHtml(e.name) + '<br><span class="muted">' + subcat(e.subcategory) + '</span></td><td><span class="category-dot ' + cat(e.category).color + '"></span>' + cat(e.category).name + '</td><td>' + escapeHtml(e.user || 'Unknown') + '</td><td>' + e.date + '</td><td>' + e.quantity + '</td><td class="amount">' + money(e.total) + '</td><td><button class="ghost-button" data-delete-expense="' + e.id + '">Delete</button></td></tr>';
+    }).join('') : '<tr><td colspan="7" class="empty">No expense entries yet.</td></tr>') +
+    '</tbody></table></div>' +
+  '</div>';
+
+  document.querySelector('#view-dashboard').innerHTML = html;
+
+  // Render Charts after DOM injection
+  if (window.Chart) renderCharts(isManager, currentMonthExpenses, totalAllowance);
 }
 
+// Global chart instances to destroy before re-rendering
+var chartInstances = [];
 
+function renderCharts(isManager, cmExpenses, totalAllowance) {
+  // Clean up old charts
+  chartInstances.forEach(function(c) { c.destroy(); });
+  chartInstances = [];
+
+  var categoryTotals = {};
+  categories.forEach(function(c) { categoryTotals[c.name] = 0; });
+  cmExpenses.forEach(function(e) { 
+    var cName = cat(e.category).name;
+    categoryTotals[cName] = (categoryTotals[cName] || 0) + Number(e.total);
+  });
+
+  var daysInMonth = 31;
+  var dailyTotals = Array(daysInMonth).fill(0);
+  cmExpenses.forEach(function(e) {
+    var day = parseInt(e.date.split('-')[2], 10);
+    if (!isNaN(day) && day >= 1 && day <= 31) dailyTotals[day - 1] += Number(e.total);
+  });
+  var cumulative = [];
+  var currentSum = 0;
+  for (var i = 0; i < daysInMonth; i++) {
+    currentSum += dailyTotals[i];
+    cumulative.push(currentSum);
+  }
+  var labelsDays = Array.from({length: 31}, function(_, i) { return (i + 1).toString(); });
+
+  var commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
+
+  if (!isManager) {
+    var ctxDonut = document.getElementById('mother-donut-chart');
+    if (ctxDonut) {
+      chartInstances.push(new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(categoryTotals),
+          datasets: [{ data: Object.values(categoryTotals), backgroundColor: ['#173b37', '#2eb886', '#0070f3'] }]
+        },
+        options: commonOptions
+      }));
+    }
+    
+    var ctxLine = document.getElementById('mother-line-chart');
+    if (ctxLine) {
+      chartInstances.push(new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: labelsDays,
+          datasets: [{
+            label: 'Cumulative Spend (LKR)',
+            data: cumulative,
+            borderColor: '#2eb886',
+            backgroundColor: 'rgba(46, 184, 134, 0.1)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      }));
+    }
+  } else {
+    var ctxPie = document.getElementById('manager-pie-chart');
+    if (ctxPie) {
+      chartInstances.push(new Chart(ctxPie, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(categoryTotals),
+          datasets: [{ data: Object.values(categoryTotals), backgroundColor: ['#173b37', '#2eb886', '#0070f3'] }]
+        },
+        options: commonOptions
+      }));
+    }
+
+    var userTotals = {};
+    cmExpenses.forEach(function(e) {
+      var u = e.user || 'Unknown';
+      userTotals[u] = (userTotals[u] || 0) + Number(e.total);
+    });
+    
+    var ctxBar = document.getElementById('manager-bar-chart');
+    if (ctxBar) {
+      chartInstances.push(new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(userTotals),
+          datasets: [{ label: 'Total Spend (LKR)', data: Object.values(userTotals), backgroundColor: '#173b37' }]
+        },
+        options: commonOptions
+      }));
+    }
+
+    var ctxLine2 = document.getElementById('manager-line-chart');
+    if (ctxLine2) {
+      chartInstances.push(new Chart(ctxLine2, {
+        type: 'line',
+        data: {
+          labels: labelsDays,
+          datasets: [
+            { label: 'Cumulative Village Spend', data: cumulative, borderColor: '#173b37', tension: 0.3 },
+            { label: 'Village Allowance', data: Array(31).fill(totalAllowance), borderColor: '#e0e0e0', borderDash: [5, 5], pointRadius: 0 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      }));
+    }
+  }
+}
+
+  // ============================================================
 // ============================================================
 function enhanceExpenseForm() {
   var form = document.querySelector('#expense-form');

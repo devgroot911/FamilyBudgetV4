@@ -135,3 +135,6 @@ h1, h2 { font-family: inherit; letter-spacing: 0; }
 .progress-fill.mint { background: var(--mint-strong); }
 .badge { background: var(--mint); }
 
+
+.chart-container { position: relative; height: 250px; width: 100%; }
+@media (max-width: 600px) { .chart-container { height: 200px; } }
