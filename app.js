@@ -184,7 +184,15 @@ function mergeCatalogCsv(csvText) {
     var name = (hasId ? parts[1] : parts[0] || '').trim();
     if (!name) return;
     var existing = byId[id] || byName[name.toLowerCase()];
-    var item = { id: existing ? existing.id : id, name: name, category: Number(hasId ? parts[4] : parts[3]) || 1, subcategory: Number(hasId ? parts[5] : parts[4]) || 1, unit: (hasId ? parts[6] : parts[5] || 'kg').trim() || 'kg' };
+    var item = { 
+      id: existing ? existing.id : id, 
+      name: name, 
+      nameSi: (hasId ? parts[2] : parts[1] || name).trim() || name,
+      nameTa: (hasId ? parts[3] : parts[2] || name).trim() || name,
+      category: Number(hasId ? parts[4] : parts[3]) || 1, 
+      subcategory: Number(hasId ? parts[5] : parts[4]) || 1, 
+      unit: (hasId ? parts[6] : parts[5] || 'kg').trim() || 'kg' 
+    };
     if (existing) { state.items = state.items.filter(function(e) { return e.id !== existing.id; }); updated++; }
     else { added++; }
     state.items.unshift(item);
@@ -604,7 +612,7 @@ function renderItems() {
         '<div class="section-heading"><div><h2>Catalog</h2><small>' + state.items.length + ' reusable items</small></div></div>' +
         '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Category</th><th>Unit</th><th></th></tr></thead><tbody>' +
         (state.items.length ? state.items.map(function(item) {
-          return '<tr><td><strong>' + escapeHtml(item.name) + '</strong><br><span class="muted">' + subcat(item.subcategory) + '</span></td><td>' + cat(item.category).name + '</td><td>' + item.unit + '</td><td><button class="ghost-button" data-delete-item="' + item.id + '">Delete</button></td></tr>';
+          var langs = ""; if(item.nameSi || item.nameTa) langs = "<br><small style=\"color:var(--ink-soft);font-size:10px;\">" + escapeHtml(item.nameSi || item.name) + " · " + escapeHtml(item.nameTa || item.name) + "</small>"; return '<tr><td><strong>' + escapeHtml(item.name) + '</strong>' + langs + '<br><span class="muted">' + subcat(item.subcategory) + '</span></td><td>' + cat(item.category).name + '</td><td>' + item.unit + '</td><td><button class="ghost-button" data-delete-item="' + item.id + '">Delete</button></td></tr>';
         }).join('') : '<tr><td colspan="4" class="empty">Your catalog is empty. Sync from Google Sheet to get started.</td></tr>') +
         '</tbody></table></div>' +
       '</div>' +
