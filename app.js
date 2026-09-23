@@ -110,8 +110,19 @@ function getVisibleExpenses() {
   
   var role = (sessionStorage.getItem('role') || 'mother').toLowerCase();
     var isManager = role.indexOf('admin') !== -1 || role.indexOf('director') !== -1 || role.indexOf('accountant') !== -1 || role.indexOf('assistant') !== -1;
+    var myName = sessionStorage.getItem('username') || 'mother';
+    var myVillage = state.profiles && state.profiles[myName] ? state.profiles[myName].village : null;
+
     if (isManager) {
-      return validExpenses;
+      if (role === 'national_director' || role === 'accountant' || role === 'admin' || myVillage === 'All') {
+        return validExpenses;
+      } else {
+        // Filter strictly to current user's village
+        return validExpenses.filter(function(e) {
+          var expVillage = state.profiles && state.profiles[e.user] ? state.profiles[e.user].village : null;
+          return expVillage === myVillage;
+        });
+      }
     }
   var myName = sessionStorage.getItem('username') || 'mother';
   return validExpenses.filter(function(e) { return e.user === myName; });
