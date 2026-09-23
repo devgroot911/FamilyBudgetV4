@@ -946,21 +946,33 @@ function renderReports() {
       var myName = sessionStorage.getItem('username') || 'mother';
       var myVillage = state.profiles[myName] ? state.profiles[myName].village : null;
       var isNational = (role === 'national_director' || role === 'accountant' || role === 'admin' || myVillage === 'All');
-      var options = Object.keys(state.profiles).filter(function(u) {
-        if (state.profiles[u].usertype && state.profiles[u].usertype.toLowerCase().indexOf('admin') !== -1) return false;
-        if (isNational) return true;
-        return state.profiles[u].village === myVillage;
-      }).map(function(u) {
-        return '<option value="' + escapeHtml(u) + '">' + escapeHtml(state.profiles[u].name || u) + ' (' + u + ')</option>';
-      }).join('');
       
+      var publishedReports = [];
+      Object.keys(state.allowances || {}).forEach(function(key) {
+        if (key.indexOf('_9999') !== -1 && Number(state.allowances[key]) === 1) {
+          var parts = key.split('_');
+          var u = parts[0];
+          var m = parts[1];
+          if (state.profiles[u]) {
+            if (state.profiles[u].usertype && state.profiles[u].usertype.toLowerCase().indexOf('admin') !== -1) return;
+            if (isNational || state.profiles[u].village === myVillage) {
+              publishedReports.push({ user: u, month: m, name: state.profiles[u].name || u, village: state.profiles[u].village });
+            }
+          }
+        }
+      });
+      publishedReports.sort(function(a, b) { return b.month.localeCompare(a.month); });
+
       excelPanel = '<div class="panel content-gap">' +
-        '<div class="section-heading"><div><h2>Mother Level Excel Report</h2><small>Download formatted multi-sheet Excel</small></div></div>' +
-        '<div class="form-grid">' +
-          '<div class="field"><label>Mother</label><select id="excel-user">' + options + '</select></div>' +
-          '<div class="field"><label>Month</label><input type="month" id="excel-month" value="' + currentMonth() + '"></div>' +
-        '</div>' +
-        '<div class="button-row"><button class="primary-button" data-action="export-excel">Download Excel</button></div>' +
+        '<div class="section-heading"><div><h2>Published Mother Reports</h2><small>Download formatted multi-sheet Excel for locked months</small></div></div>' +
+        (publishedReports.length ?
+          '<div class="table-wrap"><table><thead><tr><th>Month</th><th>Mother</th><th>Village</th><th></th></tr></thead><tbody>' +
+          publishedReports.map(function(r) {
+            return '<tr><td><strong>' + r.month + '</strong></td><td>' + escapeHtml(r.name) + ' (' + escapeHtml(r.user) + ')</td><td>' + escapeHtml(r.village || 'N/A') + '</td><td><button class="primary-button" onclick="generateExcelReport(\'' + escapeHtml(r.user) + '\', \'' + r.month + '\')">Download Excel</button></td></tr>';
+          }).join('') +
+          '</tbody></table></div>' :
+          '<div class="empty">No published reports available yet.</div>'
+        ) +
       '</div>';
     }
 
@@ -1410,4 +1422,99 @@ document.querySelector('#logout-button').addEventListener('click', function() {
 render();
 if (isLoggedIn) {
   fetchCloudData();
+}
+
+
+function generateExcelReport(username, month) {
+  if (!window.XLSX) return notify('Excel library loading, try again in a moment');
+  var profile = state.profiles && state.profiles[username] ? state.profiles[username] : {};
+  var motherName = profile.name || username;
+  var familyHouse = profile.house || 'N/A';
+  
+  var list = (state.expenses || []).filter(function(e) {
+    return e.user === username && e.date.indexOf(month) === 0;
+  }).sort(function(a, b) { return a.date.localeCompare(b.date); });
+  
+  if (list.length === 0) return notify('No records found for ' + motherName + ' in ' + month);
+  
+  var recordsData = [['Date', 'Item ID', 'Item Name', 'Category 1', 'Category 2', 'Quantity', 'Unit Price', 'Total Price']];
+  var cat2Totals = {};
+  var grandTotal = 0;
+  var largestSingle = null;
+  
+  var itemGroups = {};
+  var qualityFlags = [];
+  var zeroPriceCount = 0;
+  
+  list.forEach(function(e) {
+    var c1 = cat(e.category).name;
+    var c2 = subcat(e.subcategory);
+    var tPrice = Number(e.total);
+    var uPrice = tPrice / (Number(e.quantity) || 1);
+    
+    recordsData.push([ e.date, e.id.substring(0,8), e.name, c1, c2, e.quantity, uPrice, tPrice ]);
+    
+    grandTotal += tPrice;
+    cat2Totals[c2] = (cat2Totals[c2] || 0) + tPrice;
+    
+    itemGroups[e.name] = (itemGroups[e.name] || 0) + tPrice;
+    
+    if (!largestSingle || tPrice > Number(largestSingle.total)) {
+      largestSingle = e;
+    }
+    if (tPrice <= 0) zeroPriceCount++;
+  });
+  
+  if (zeroPriceCount > 0) qualityFlags.push(zeroPriceCount + " entries have 0.00 total price.");
+  if (grandTotal === 0) qualityFlags.push("Warning: Grand total is 0.");
+  if (qualityFlags.length === 0) qualityFlags.push("Data appears clean. No anomalies detected.");
+  
+  var ws1 = XLSX.utils.aoa_to_sheet(recordsData);
+  ws1['!cols'] = [{wch:12}, {wch:10}, {wch:30}, {wch:15}, {wch:20}, {wch:10}, {wch:12}, {wch:15}];
+  
+  var largestCat2 = Object.keys(cat2Totals).reduce(function(a, b) { return cat2Totals[a] > cat2Totals[b] ? a : b; }, Object.keys(cat2Totals)[0] || '');
+  var largestItem = Object.keys(itemGroups).reduce(function(a, b) { return itemGroups[a] > itemGroups[b] ? a : b; }, Object.keys(itemGroups)[0] || '');
+  
+  var insightsData = [
+    ['REPORT METADATA', ''],
+    ['Mother Name', motherName],
+    ['Family House', familyHouse],
+    ['Report Period', month],
+    ['',''],
+    ['TOTALS', ''],
+    ['Grand Total Expenditure', grandTotal],
+    ['',''],
+    ['CATEGORY 2 SUMMARY', 'Total Expenditure']
+  ];
+  
+  Object.keys(cat2Totals).forEach(function(k) {
+    if (cat2Totals[k] > 0) insightsData.push([k, cat2Totals[k]]);
+  });
+  
+  insightsData.push(['','']);
+  insightsData.push(['AI INSIGHTS', '']);
+  insightsData.push(['Largest Category 2', largestCat2 + ' (' + money(cat2Totals[largestCat2]) + ' - ' + Math.round((cat2Totals[largestCat2]/grandTotal)*100) + '%)']);
+  
+  if (largestItem) {
+    insightsData.push(['Combined Top Item Total', largestItem + ' (' + money(itemGroups[largestItem]) + ' - ' + Math.round((itemGroups[largestItem]/grandTotal)*100) + '%)']);
+  }
+  
+  if (largestSingle) {
+    insightsData.push(['Largest Single Expense', largestSingle.date + ' | ' + largestSingle.name + ' (' + money(largestSingle.total) + ')']);
+  }
+  
+  insightsData.push(['', '']);
+  insightsData.push(['DATA QUALITY FLAGS', '']);
+  qualityFlags.forEach(function(flag) {
+    insightsData.push([flag, '']);
+  });
+  
+  var ws2 = XLSX.utils.aoa_to_sheet(insightsData);
+  ws2['!cols'] = [{wch:35}, {wch:35}];
+  
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, 'Expense Records');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Summary & Insights');
+  
+  XLSX.writeFile(wb, 'Report_' + username + '_' + month + '.xlsx');
 }
