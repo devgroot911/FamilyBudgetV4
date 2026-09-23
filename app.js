@@ -1478,9 +1478,9 @@ function generateExcelReport(username, month) {
   
   // Signatures Sheet 1
   recordsData.push(['']); recordsData.push(['']); recordsData.push(['']);
-  recordsData.push(['______________', '', '', '______________', '', '', '______________']);
-  recordsData.push(['Mother Sign.', '', '', 'Accounts Asst.', '', '', 'Village Dir.']);
-  recordsData.push(['Date: ........', '', '', 'Date: ........', '', '', 'Date: ........']);
+  recordsData.push(['______________', '', '______________', '', '______________', '', '']);
+  recordsData.push(['Mother Sign.', '', 'Accounts Asst.', '', 'Village Dir.', '', '']);
+  recordsData.push(['Date: ........', '', 'Date: ........', '', 'Date: ........', '', '']);
 
   var ws1 = XLSX.utils.aoa_to_sheet(recordsData);
   // Narrow widths for Portrait A4 fit
@@ -1522,9 +1522,9 @@ function generateExcelReport(username, month) {
 
   // Signatures Sheet 2
   insightsData.push(['']); insightsData.push(['']); insightsData.push(['']);
-  insightsData.push(['___________________', '___________________', '___________________']);
-  insightsData.push(['Signature of Mother', 'Certified by Accounts Asst', 'Approved by Village Dir']);
-  insightsData.push(['Date: .............', 'Date: .............', 'Date: .............']);
+  insightsData.push(['______________', '______________', '______________']);
+  insightsData.push(['Mother Sign.', 'Accounts Asst.', 'Village Dir.']);
+  insightsData.push(['Date: ........', 'Date: ........', 'Date: ........']);
   
   var ws2 = XLSX.utils.aoa_to_sheet(insightsData);
   ws2['!cols'] = [{wch:30}, {wch:25}, {wch:25}];
