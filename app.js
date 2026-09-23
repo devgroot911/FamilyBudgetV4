@@ -370,7 +370,7 @@ function renderDashboard() {
   var cm = currentMonth();
   var visibleExpenses = getVisibleExpenses();
   var totalSpent = visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; }).reduce(function(s, i) { return s + Number(i.total); }, 0);
-  var totalAllowance = categories.reduce(function(s, c) { return s + allowance(c.id); }, 0) || 140000;
+  var totalAllowance = categories.reduce(function(s, c) { return s + allowance(c.id); }, 0);
   var remaining = totalAllowance - totalSpent;
   var recent = visibleExpenses.slice().sort(function(a, b) { return b.date.localeCompare(a.date); }).slice(0, 10);
   var maxSpent = Math.max.apply(null, categories.map(function(c) { return spent(c.id); }).concat([1]));
@@ -395,9 +395,10 @@ function renderDashboard() {
       '<div class="panel">' +
         '<div class="section-heading"><div><h2>Allowance health</h2><small>' + cm + '</small></div><button class="ghost-button" data-view="allowances">Edit</button></div>' +
         categories.map(function(c, i) {
-          var budget = allowance(c.id) || [85000, 30000, 25000][i];
-          var v = spent(c.id);
-          return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + money(v) + ' / ' + money(budget) + '</span></div><div class="progress-track"><div class="progress-fill' + (i === 1 ? ' mint' : i === 2 ? ' blue' : '') + '" style="width:' + Math.min(v / budget * 100, 100) + '%"></div></div></div>';
+          var budget = allowance(c.id) || 0;
+            var v = spent(c.id);
+            var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
+            return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + money(v) + ' / ' + money(budget) + '</span></div><div class="progress-track"><div class="progress-fill' + (i === 1 ? ' mint' : i === 2 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div></div>';
         }).join('') +
       '</div>' +
     '</div>' +
@@ -553,7 +554,7 @@ function renderAllowances() {
         '<form id="allowance-form">' +
           '<div class="field"><label for="allowance-month">Budget month</label><input id="allowance-month" type="month" value="' + cm + '"></div>' +
           categories.map(function(c, i) {
-            return '<div class="field"><label for="allowance-' + c.id + '">' + c.name + ' (LKR)</label><input id="allowance-' + c.id + '" type="number" min="0" step="0.01" value="' + (allowance(c.id, cm) || [85000, 30000, 25000][i]) + '"></div>';
+            return '<div class="field"><label for="allowance-' + c.id + '">' + c.name + ' (LKR)</label><input id="allowance-' + c.id + '" type="number" min="0" step="0.01" value="' + (allowance(c.id, cm) || 0) + '"></div>';
           }).join('') +
           '<button class="primary-button" type="submit">Save allowances</button>' +
         '</form>' +
@@ -561,9 +562,11 @@ function renderAllowances() {
       '<div class="panel">' +
         '<div class="section-heading"><div><h2>Month at a glance</h2><small>Allowance vs actual spending</small></div></div>' +
         categories.map(function(c, i) {
-          var budget = allowance(c.id, cm) || [85000, 30000, 25000][i];
-          var v = spent(c.id, cm);
-          return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + Math.round(v / budget * 100) + '%</span></div><div class="progress-track"><div class="progress-fill' + (c.id === 2 ? ' mint' : c.id === 3 ? ' blue' : '') + '" style="width:' + Math.min(v / budget * 100, 100) + '%"></div></div><p class="muted">' + money(v) + ' spent from ' + money(budget) + '</p></div>';
+          var budget = allowance(c.id, cm) || 0;
+            var v = spent(c.id, cm);
+            var pctStr = budget > 0 ? Math.round((v / budget) * 100) + "%" : "0%";
+            var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
+            return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + pctStr + '</span></div><div class="progress-track"><div class="progress-fill' + (c.id === 2 ? ' mint' : c.id === 3 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div><p class="muted">' + money(v) + ' spent from ' + money(budget) + '</p></div>';
         }).join('') +
       '</div>' +
     '</div>';
