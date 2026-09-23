@@ -1428,14 +1428,14 @@ if (isLoggedIn) {
 
 var reportTheme = {
   palette: {
-    PRIMARY_DARK: "1F5C3A", ACCENT: "7BB661", LIGHT_BAND: "F4F8F4",
-    BORDER_GREY: "D0D7D2", TEXT_DARK: "1A1A1A", TEXT_MUTED: "6B7280",
-    WARN: "C0392B", WARN_FILL: "FADBD8", OK: "2E7D32", TINT: "E8F5E9"
+    PRIMARY_DARK: "E0E0E0", ACCENT: "808080", LIGHT_BAND: "F9F9F9",
+    BORDER_GREY: "D0D0D0", TEXT_DARK: "1A1A1A", TEXT_MUTED: "6B6B6B",
+    WARN: "1A1A1A", WARN_FILL: "EFEFEF", OK: "1A1A1A", TINT: "F0F0F0"
   },
   fonts: {
-    title: { name: "Calibri", sz: 14, bold: true, color: { rgb: "FFFFFF" } },
-    section: { name: "Calibri", sz: 12, bold: true, color: { rgb: "1F5C3A" } },
-    header: { name: "Calibri", sz: 10.5, bold: true, color: { rgb: "FFFFFF" } },
+    title: { name: "Calibri", sz: 14, bold: true, color: { rgb: "1A1A1A" } },
+    section: { name: "Calibri", sz: 12, bold: true, color: { rgb: "1A1A1A" } },
+    header: { name: "Calibri", sz: 10.5, bold: true, color: { rgb: "1A1A1A" } },
     body: { name: "Calibri", sz: 10.5, color: { rgb: "1A1A1A" } },
     metaLabel: { name: "Calibri", sz: 11, bold: true, color: { rgb: "6B7280" } },
     metaVal: { name: "Calibri", sz: 11, color: { rgb: "1A1A1A" } },
@@ -1612,9 +1612,9 @@ function generateExcelReport(username, month) {
     var ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
     ws1['!merges'] = ws1Merges;
     ws1['!rows'] = ws1Rows;
-    ws1['!cols'] = [{wch:12}, {wch:30}, {wch:15}, {wch:18}, {wch:8}, {wch:12}, {wch:14}];
+    ws1['!cols'] = [{wch:11}, {wch:23}, {wch:12}, {wch:12}, {wch:5}, {wch:9}, {wch:10}];
     ws1['!freeze'] = { ySplit: freezeRow };
-    ws1['!pageSetup'] = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 };
+    ws1['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 };
     ws1['!margins'] = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
     ws1['!views'] = [{showGridLines: false}];
     
@@ -1625,7 +1625,7 @@ function generateExcelReport(username, month) {
     ws2Data.push([ createCell("Grand Total", {font: reportTheme.fonts.section}) ]);
     ws2Data.push([ 
       createCell("", {fill: {fgColor: {rgb: reportTheme.palette.LIGHT_BAND}}, border: reportTheme.borders.box}), 
-      createCell(grandTotal, {font: {name: "Calibri", sz:16, bold:true, color:{rgb:reportTheme.palette.PRIMARY_DARK}}, fill: {fgColor: {rgb: reportTheme.palette.LIGHT_BAND}}, border: reportTheme.borders.box, alignment: {horizontal:"center"}}, 'n', reportTheme.formats.currency) 
+      createCell(grandTotal, {font: {name: "Calibri", sz:16, bold:true, color:{rgb:reportTheme.palette.TEXT_DARK}}, fill: {fgColor: {rgb: reportTheme.palette.LIGHT_BAND}}, border: reportTheme.borders.box, alignment: {horizontal:"center"}}, 'n', reportTheme.formats.currency) 
     ]);
     ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:2}});
     ws2Rows.push({hpt: 18}, {hpt: 30});
