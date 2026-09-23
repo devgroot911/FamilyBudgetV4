@@ -137,7 +137,7 @@ function categoryOptions(selected) {
 }
 function subcategoryOptions(selected) {
   return subcategories.map(function(s) {
-    return '<option value="' + s.id + '"' + (s.id === Number(selected || 1) ? ' selected' : '') + '>' + s.id + ' - ' + s.name + '</option>';
+    return '<option value="' + s.id + '"' + (s.id === Number(selected || 1) ? ' selected' : '') + '>' + s.id + '</option>';
   }).join('');
 }
 
@@ -341,6 +341,7 @@ function render() {
   // Render view
   var renderers = { dashboard: renderDashboard, expenses: renderExpenses, records: renderRecords, allowances: renderAllowances, items: renderItems, reports: renderReports, profile: renderProfile, users: renderUsers };
   if (renderers[activeView]) renderers[activeView]();
+  if (activeView === 'expenses') { enhanceExpenseForm(); }
   updateHeader();
 }
 
@@ -386,6 +387,78 @@ function renderDashboard() {
     '</div>';
 }
 
+
+// ============================================================
+function enhanceExpenseForm() {
+  var form = document.querySelector('#expense-form');
+  if (!form || document.querySelector('#expense-item')) return;
+
+  // Add catalog item select at top of form grid
+  var field = document.createElement('div');
+  field.className = 'field full';
+  field.innerHTML = '<label for="expense-item">Catalog item</label><select id="expense-item"></select><p class="form-help">Choose an item from the cards below, or leave as Custom item to type manually.</p>';
+  form.querySelector('.form-grid').prepend(field);
+
+  // Add catalog cards panel
+  var catalogPanel = document.createElement('div');
+  catalogPanel.className = 'expense-catalog-panel';
+  catalogPanel.innerHTML = '<div class="section-heading"><div><h3>Catalog Items</h3><small id="expense-catalog-count"></small></div></div><div class="expense-catalog-grid" id="expense-catalog-grid"></div>';
+  form.querySelector('.form-grid').after(catalogPanel);
+
+  var itemSelect = document.querySelector('#expense-item');
+  var categorySelect = document.querySelector('#expense-category');
+  var subcategorySelect = document.querySelector('#expense-subcategory');
+
+  function chooseItem(item) {
+    itemSelect.value = item.id;
+    document.querySelector('#expense-name').value = item.name;
+  }
+
+  function refreshItems() {
+    var categoryId = Number(categorySelect.value);
+    var subcategoryId = Number(subcategorySelect.value);
+    var selectedId = itemSelect.value;
+    var filtered = state.items.filter(function(item) {
+      return item.category === categoryId && item.subcategory === subcategoryId;
+    }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+    itemSelect.innerHTML = '<option value="">Custom item</option>' + filtered.map(function(item) {
+      return '<option value="' + escapeHtml(item.id) + '">' + escapeHtml(item.name) + ' - ' + item.subcategory + '</option>';
+    }).join('');
+
+    var countEl = document.querySelector('#expense-catalog-count');
+    var gridEl = document.querySelector('#expense-catalog-grid');
+    if (countEl) countEl.textContent = filtered.length + ' matching items';
+    if (gridEl) {
+      if (filtered.length) {
+        gridEl.innerHTML = filtered.map(function(item) {
+          return '<button type="button" class="expense-catalog-card' + (item.id === selectedId ? ' selected' : '') + '" data-expense-item-id="' + escapeHtml(item.id) + '"><strong>' + escapeHtml(item.name) + '</strong><span>' + escapeHtml(item.unit || 'kg') + '</span></button>';
+        }).join('');
+        gridEl.querySelectorAll('[data-expense-item-id]').forEach(function(button) {
+          button.addEventListener('click', function() {
+            var found = state.items.find(function(item) { return item.id === button.dataset.expenseItemId; });
+            if (found) { chooseItem(found); refreshItems(); }
+          });
+        });
+      } else {
+        gridEl.innerHTML = '<div class="empty">No catalog items for Category ' + categoryId + ' / Sub-category ' + subcategoryId + '. Sync the Google Sheet in Item Master first.</div>';
+      }
+    }
+
+    var stillValid = filtered.some(function(item) { return item.id === selectedId; });
+    if (stillValid) { itemSelect.value = selectedId; }
+    else { itemSelect.value = ''; document.querySelector('#expense-name').value = ''; }
+  }
+
+  itemSelect.addEventListener('change', function(event) {
+    var found = state.items.find(function(item) { return item.id === event.target.value; });
+    if (found) chooseItem(found);
+  });
+  categorySelect.addEventListener('change', refreshItems);
+  subcategorySelect.addEventListener('change', refreshItems);
+  refreshItems();
+}
+
 function renderExpenses() {
   var visibleExpenses = getVisibleExpenses();
   var todayItems = visibleExpenses.filter(function(i) { return i.date === today(); });
@@ -394,13 +467,13 @@ function renderExpenses() {
       '<div class="panel">' +
         '<div class="section-heading"><div><h2>Item Details Form</h2><small>Saved to cloud</small></div></div>' +
         '<form id="expense-form">' +
+          '<div class="field"><label for="expense-category">Category</label><select id="expense-category">' + categoryOptions(selectedCategory) + '</select></div>' +
+          '<div class="field"><label for="expense-subcategory">Sub-category</label><select id="expense-subcategory">' + subcategoryOptions() + '</select></div>' +
           '<div class="form-grid">' +
-            '<div class="field full"><label for="expense-name">Item or custom description</label><input id="expense-name" required placeholder="e.g. Rice 5kg"></div>' +
-            '<div class="field"><label for="expense-category">Category</label><select id="expense-category">' + categoryOptions(selectedCategory) + '</select></div>' +
-            '<div class="field"><label for="expense-subcategory">Sub-category</label><select id="expense-subcategory">' + subcategoryOptions() + '</select></div>' +
+            '<div class="field full" style="display:none"><label for="expense-name">Item or custom description</label><input id="expense-name" placeholder="e.g. Rice 5kg"></div>' +
             '<div class="field"><label for="expense-quantity">Quantity</label><input id="expense-quantity" type="number" min="0.01" step="0.01" value="1" required></div>' +
-            '<div class="field"><label for="expense-total">Total price (LKR)</label><input id="expense-total" type="number" min="0.01" step="0.01" required placeholder="0.00"></div>' +
-            '<div class="field"><label for="expense-date">Purchase date</label><input id="expense-date" type="date" value="' + today() + '" required></div>' +
+            '<div class="field"><label for="expense-total">Total Price (LKR)</label><input id="expense-total" type="number" min="0.01" step="0.01" required placeholder="0.00"></div>' +
+            '<div class="field"><label for="expense-date">Date (YYYY-MM-DD)</label><input id="expense-date" type="date" value="' + today() + '" required></div>' +
             '<div class="field"><label for="expense-note">Note (optional)</label><input id="expense-note" placeholder="Receipt number or note"></div>' +
           '</div>' +
           '<div class="callout">Expense is saved directly to the cloud database.</div>' +
