@@ -366,7 +366,7 @@ function render() {
   if (role.indexOf('admin') !== -1) {
     document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'flex'; });
   } else if (isManager) {
-    var views = ['dashboard', 'reports', 'records', 'expenses', 'items'];
+    var views = ['dashboard', 'reports', 'records', 'expenses', 'items', 'profile'];
     views.forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
       if (el) el.style.display = 'flex';
@@ -1058,68 +1058,92 @@ function renderReports() {
 }
 
 function renderProfile() {
-  var profile = getProfile();
-  var role = (sessionStorage.getItem('role') || '').toLowerCase();
-  var defaultUsertype = role === 'mother' ? 'Mother / YCCW' : 'Other';
-  var currentUsertype = profile.usertype || defaultUsertype;
-  document.querySelector('#view-profile').innerHTML =
-    '<div class="grid two-col">' +
-      '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Profile & Settings</h2><small>Used on locally generated reports</small></div></div>' +
-        '<form id="profile-form">' +
-          '<div class="field"><label for="profile-name-input">Name</label><input id="profile-name-input" value="' + escapeHtml(profile.name) + '" placeholder="Family member name"></div>' +
-          '<div class="form-grid">' +
-            '<div class="field"><label for="profile-usertype">User Type</label><select id="profile-usertype"' + (isAdmin ? '' : ' disabled') + '>' +
-              '<option value="Mother / YCCW"' + (currentUsertype === 'Mother / YCCW' ? ' selected' : '') + '>Usertype 1 : Mother / YCCW</option>' +
-              '<option value="Father / Guardian"' + (currentUsertype === 'Father / Guardian' ? ' selected' : '') + '>Usertype 2 : Father / Guardian</option>' +
-              '<option value="Other"' + (currentUsertype === 'Other' ? ' selected' : '') + '>Usertype 3 : Other</option>' +
-            '</select></div>' +
-            '<div class="field"><label for="profile-village">Village</label><input id="profile-village" value="' + escapeHtml(profile.village) + '"></div>' +
-            '<div class="field"><label for="profile-house">House number</label><input id="profile-house" value="' + escapeHtml(profile.house) + '"></div>' +
-            '<div class="field"><label for="profile-phone">Phone</label><input id="profile-phone" value="' + escapeHtml(profile.phone) + '"></div>' +
-            '<div class="field"><label for="profile-email">Email</label><input id="profile-email" type="email" value="' + escapeHtml(profile.email) + '"></div>' +
-          '</div>' +
-          '<button class="primary-button" type="submit">Save profile</button>' +
-        '</form>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Data controls</h2><small>Backup and restore</small></div></div>' +
-        '<p class="form-help">Use a backup before changing devices or clearing browser storage.</p>' +
-        '<div class="button-row"><button class="primary-button" data-action="export-backup">Download backup</button><button class="ghost-button" data-action="import-backup">Restore backup</button></div>' +
-      '</div>' +
-    '</div>';
+    var profile = getProfile();
+    var role = (sessionStorage.getItem('role') || '').toLowerCase();
+    var isAdmin = role.indexOf('admin') !== -1;
+    var defaultUsertype = role === 'mother' ? 'Mother / YCCW' : 'Other';
+    var currentUsertype = profile.usertype || defaultUsertype;
+    
+    // Find the current user in loadedUsers to get their password (if available)
+    var myUsername = sessionStorage.getItem('username');
+    var myPassword = '';
+    if (window.loadedUsers) {
+       var me = window.loadedUsers.find(function(u) { return u.username === myUsername; });
+       if (me) myPassword = me.password || '';
+    }
 
-  document.querySelector('#profile-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    var user = sessionStorage.getItem('username') || 'mother';
-    if (!state.profiles) state.profiles = {};
-    state.profiles[user] = Object.assign(state.profiles[user] || {}, {
-      name: document.querySelector('#profile-name-input').value,
-      usertype: document.querySelector('#profile-usertype').value,
-      village: document.querySelector('#profile-village').value,
-      house: document.querySelector('#profile-house').value,
-      phone: document.querySelector('#profile-phone').value,
-      email: document.querySelector('#profile-email').value
+    document.querySelector('#view-profile').innerHTML =
+      '<div class="grid two-col">' +
+        '<div class="panel">' +
+          '<div class="section-heading"><div><h2>My Profile & Settings</h2><small>Update your account details</small></div></div>' +
+          '<form id="profile-form">' +
+            '<div class="field"><label for="profile-name-input">Full Name</label><input id="profile-name-input" required value="' + escapeHtml(profile.name) + '"></div>' +
+            '<div class="field"><label for="profile-password-input">Password</label><input id="profile-password-input" required value="' + escapeHtml(myPassword) + '"></div>' +
+            '<div class="form-grid">' +
+              '<div class="field"><label for="profile-usertype">User Type</label><select id="profile-usertype"' + (isAdmin ? '' : ' disabled style="background:#f0f0f0"') + '>' +
+                '<option value="Mother / YCCW"' + (currentUsertype === 'Mother / YCCW' ? ' selected' : '') + '>Mother / YCCW</option>' +
+                '<option value="Father / Guardian"' + (currentUsertype === 'Father / Guardian' ? ' selected' : '') + '>Father / Guardian</option>' +
+                '<option value="Village Director"' + (currentUsertype === 'Village Director' ? ' selected' : '') + '>Village Director</option>' +
+                '<option value="Accounts Assistant"' + (currentUsertype === 'Accounts Assistant' ? ' selected' : '') + '>Accounts Assistant</option>' +
+                '<option value="System Admin"' + (currentUsertype === 'System Admin' ? ' selected' : '') + '>System Admin</option>' +
+                '<option value="Other"' + (currentUsertype === 'Other' ? ' selected' : '') + '>Other</option>' +
+              '</select></div>' +
+              '<div class="field"><label for="profile-village">Village</label><input id="profile-village" required value="' + escapeHtml(profile.village) + '"' + (isAdmin ? '' : ' readonly style="background:#f0f0f0"') + '></div>' +
+              '<div class="field"><label for="profile-house">House number / address</label><input id="profile-house" required value="' + escapeHtml(profile.house) + '"></div>' +
+              '<div class="field"><label for="profile-phone">Phone</label><input id="profile-phone" value="' + escapeHtml(profile.phone) + '"></div>' +
+              '<div class="field"><label for="profile-email">Email</label><input id="profile-email" type="email" value="' + escapeHtml(profile.email) + '"></div>' +
+            '</div>' +
+            '<div class="callout">System Admin privileges are required to change your User Type and assigned Village.</div>' +
+            '<button class="primary-button" type="submit">Update Profile</button>' +
+          '</form>' +
+        '</div>' +
+        '<div class="panel">' +
+          '<div class="section-heading"><div><h2>Data controls</h2><small>Backup and restore</small></div></div>' +
+          '<p class="form-help">Use a backup before changing devices or clearing browser storage.</p>' +
+          '<div class="button-row"><button class="primary-button" data-action="export-backup">Download backup</button><button class="ghost-button" data-action="import-backup">Restore backup</button></div>' +
+        '</div>' +
+      '</div>';
+  
+    document.querySelector('#profile-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      var user = sessionStorage.getItem('username') || 'mother';
+      if (!state.profiles) state.profiles = {};
+      state.profiles[user] = Object.assign(state.profiles[user] || {}, {
+        name: document.querySelector('#profile-name-input').value.trim(),
+        usertype: document.querySelector('#profile-usertype').value,
+        village: document.querySelector('#profile-village').value.trim(),
+        house: document.querySelector('#profile-house').value.trim(),
+        phone: document.querySelector('#profile-phone').value.trim(),
+        email: document.querySelector('#profile-email').value.trim()
+      });
+      save();
+      var updatePayload = {
+        name: state.profiles[user].name,
+        usertype: state.profiles[user].usertype,
+        village: state.profiles[user].village,
+        house: state.profiles[user].house,
+        phone: state.profiles[user].phone,
+        email: state.profiles[user].email,
+        password: document.querySelector('#profile-password-input').value.trim()
+      };
+      
+      var btn = event.target.querySelector('button[type="submit"]');
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+
+      supabase.from('users').update(updatePayload).eq('username', user)
+        .then(function(res) {
+          if (res.error) throw res.error;
+          notify('Profile updated securely!');
+          btn.textContent = 'Update Profile';
+          btn.disabled = false;
+          fetchCloudData();
+        })
+        .catch(function(err) { console.error(err); notify('Failed to save to cloud'); btn.textContent = 'Update Profile'; btn.disabled = false; });
     });
-    save();
-    supabase.from('users').update({
-      name: state.profiles[user].name,
-      usertype: state.profiles[user].usertype,
-      village: state.profiles[user].village,
-      house: state.profiles[user].house,
-      phone: state.profiles[user].phone,
-      email: state.profiles[user].email
-    }).eq('username', user)
-      .then(function(res) {
-        if (res.error) throw res.error;
-        notify('Profile saved securely to cloud');
-        render();
-      })
-      .catch(function(err) { console.error(err); notify('Failed to save to cloud'); });
-  });
-}
-
-function renderUsers() {
+  }
+  
+  function renderUsers() {
   document.querySelector('#view-users').innerHTML =
     '<div class="grid two-col">' +
       '<div class="panel">' +
