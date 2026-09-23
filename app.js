@@ -1008,3 +1008,11 @@ render();
 if (isLoggedIn) {
   fetchCloudData();
 }
+
+// --- Auto-refresh for Admin (every 30 seconds) ---
+// Keeps dashboard live as multiple mothers enter data simultaneously
+setInterval(function() {
+  if (isLoggedIn && (sessionStorage.getItem('role') || '').toLowerCase().indexOf('admin') !== -1) {
+    fetchCloudData();
+  }
+}, 30000);
