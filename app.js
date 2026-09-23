@@ -1438,7 +1438,6 @@ function generateExcelReport(username, month) {
   
   if (list.length === 0) return notify('No records found for ' + motherName + ' in ' + month);
   
-  // METADATA Header block
   var headerBlock = [
     ['SOS CHILDREN\'S VILLAGES - FAMILY BUDGET REPORT'],
     ['Mother Name:', motherName],
@@ -1449,7 +1448,7 @@ function generateExcelReport(username, month) {
   ];
 
   var recordsData = headerBlock.slice(); 
-  recordsData.push(['Date', 'Item Name', 'Category', 'Sub-category', 'Quantity', 'Unit Price', 'Total Price']);
+  recordsData.push(['Date', 'Item Name', 'Category', 'Sub-category', 'Qty', 'Unit Price', 'Total Price']);
   
   var cat2Totals = {};
   var grandTotal = 0;
@@ -1477,18 +1476,19 @@ function generateExcelReport(username, month) {
   if (grandTotal === 0) qualityFlags.push("Warning: Grand total is 0.");
   if (qualityFlags.length === 0) qualityFlags.push("Data appears clean. No anomalies detected.");
   
-  // Append Signatures to Sheet 1
+  // Signatures Sheet 1
   recordsData.push(['']); recordsData.push(['']); recordsData.push(['']);
-  recordsData.push(['_______________________', '', '', '_______________________', '', '', '_______________________']);
-  recordsData.push(['Signature of Mother', '', '', 'Certified by Accounts Asst.', '', '', 'Approved by Village Dir.']);
-  recordsData.push(['Date: .................', '', '', 'Date: .................', '', '', 'Date: .................']);
+  recordsData.push(['___________________', '', '___________________', '', '', '___________________']);
+  recordsData.push(['Signature of Mother', '', 'Certified by Accounts Asst', '', '', 'Approved by Village Dir']);
+  recordsData.push(['Date: .............', '', 'Date: .............', '', '', 'Date: .............']);
 
   var ws1 = XLSX.utils.aoa_to_sheet(recordsData);
-  ws1['!cols'] = [{wch:12}, {wch:32}, {wch:15}, {wch:20}, {wch:10}, {wch:12}, {wch:15}];
-  ws1['!pageSetup'] = { paperSize: 9, orientation: 'landscape', fitToWidth: 1 };
-  ws1['!margins'] = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
+  // Narrow widths for Portrait A4 fit
+  ws1['!cols'] = [{wch:10}, {wch:25}, {wch:12}, {wch:15}, {wch:6}, {wch:10}, {wch:12}];
+  // fitToWidth: 1 limits to 1 page wide. fitToHeight: 0 allows flowing to multiple pages down.
+  ws1['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 };
+  ws1['!margins'] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
   
-  // Sheet 2: Summary & Insights
   var largestCat2 = Object.keys(cat2Totals).reduce(function(a, b) { return cat2Totals[a] > cat2Totals[b] ? a : b; }, Object.keys(cat2Totals)[0] || '');
   var largestItem = Object.keys(itemGroups).reduce(function(a, b) { return itemGroups[a] > itemGroups[b] ? a : b; }, Object.keys(itemGroups)[0] || '');
   
@@ -1520,16 +1520,16 @@ function generateExcelReport(username, month) {
     insightsData.push([flag, '']);
   });
 
-  // Append Signatures to Sheet 2
+  // Signatures Sheet 2
   insightsData.push(['']); insightsData.push(['']); insightsData.push(['']);
-  insightsData.push(['_______________________', '_______________________', '_______________________']);
-  insightsData.push(['Signature of Mother', 'Certified by Accounts Asst.', 'Approved by Village Dir.']);
-  insightsData.push(['Date: .................', 'Date: .................', 'Date: .................']);
+  insightsData.push(['___________________', '___________________', '___________________']);
+  insightsData.push(['Signature of Mother', 'Certified by Accounts Asst', 'Approved by Village Dir']);
+  insightsData.push(['Date: .............', 'Date: .............', 'Date: .............']);
   
   var ws2 = XLSX.utils.aoa_to_sheet(insightsData);
-  ws2['!cols'] = [{wch:35}, {wch:25}, {wch:25}];
-  ws2['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1 };
-  ws2['!margins'] = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
+  ws2['!cols'] = [{wch:30}, {wch:25}, {wch:25}];
+  ws2['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 };
+  ws2['!margins'] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
   
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws1, 'Expense Records');
