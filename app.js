@@ -248,7 +248,7 @@ function fetchCloudData() {
     })
     .catch(function(err) {
       console.error(err);
-      notify('Failed to connect to cloud. Please refresh.');
+      notify('Sync error: ' + (err && err.message ? err.message : String(err)));
     });
 }
 
