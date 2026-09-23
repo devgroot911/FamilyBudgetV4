@@ -109,9 +109,10 @@ function getVisibleExpenses() {
   });
   
   var role = (sessionStorage.getItem('role') || 'mother').toLowerCase();
-  if (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1) {
-    return validExpenses;
-  }
+    var isManager = role.indexOf('admin') !== -1 || role.indexOf('director') !== -1 || role.indexOf('accountant') !== -1 || role.indexOf('assistant') !== -1;
+    if (isManager) {
+      return validExpenses;
+    }
   var myName = sessionStorage.getItem('username') || 'mother';
   return validExpenses.filter(function(e) { return e.user === myName; });
 }
@@ -324,13 +325,15 @@ function render() {
   }
   document.body.classList.remove('logged-out');
   var role = (sessionStorage.getItem('role') || 'mother').toLowerCase();
-
+  var isManager = role.indexOf('admin') !== -1 || role.indexOf('director') !== -1 || role.indexOf('accountant') !== -1 || role.indexOf('assistant') !== -1;
   // Show/hide nav by role
   document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'none'; });
   if (role.indexOf('admin') !== -1) {
     document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'flex'; });
-  } else if (role.indexOf('accountant') !== -1) {
-    ['dashboard', 'items', 'reports', 'records'].forEach(function(v) {
+  } else if (isManager) {
+    var views = ['dashboard', 'reports', 'records'];
+    if (role.indexOf('accountant') !== -1) views.push('items');
+    views.forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
       if (el) el.style.display = 'flex';
     });
@@ -756,7 +759,7 @@ function renderUsers() {
           '<div class="field"><label>Name / Identifier</label><input id="new-user-name" required placeholder="e.g. Jane (Mother)"></div>' +
           '<div class="field"><label>Username</label><input id="new-user-username" required></div>' +
           '<div class="field"><label>Password</label><input id="new-user-password" type="text" required></div>' +
-          '<div class="field"><label>Role</label><select id="new-user-role"><option value="mother">Mother (Data Entry)</option><option value="accountant">Accountant (Reports only)</option><option value="admin">Admin (Full Access)</option></select></div>' +
+          '<div class="field"><label>Role</label><select id="new-user-role"><option value="mother">Mother (Data Entry)</option><option value="village_director">Village Director</option><option value="accounts_assistant">Accounts Assistant</option><option value="accountant">Accountant</option><option value="national_director">National Director</option><option value="admin">System Admin</option></select></div>' +
           '<div class="button-row"><button class="primary-button" type="submit" id="add-user-submit">Create User</button><button class="ghost-button" type="button" id="cancel-edit" style="display:none">Cancel</button></div>' +
         '</form>' +
       '</div>' +
