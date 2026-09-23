@@ -1478,13 +1478,13 @@ function generateExcelReport(username, month) {
   
   // Signatures Sheet 1
   recordsData.push(['']); recordsData.push(['']); recordsData.push(['']);
-  recordsData.push(['___________________', '', '___________________', '', '', '___________________']);
-  recordsData.push(['Signature of Mother', '', 'Certified by Accounts Asst', '', '', 'Approved by Village Dir']);
-  recordsData.push(['Date: .............', '', 'Date: .............', '', '', 'Date: .............']);
+  recordsData.push(['______________', '', '', '______________', '', '', '______________']);
+  recordsData.push(['Mother Sign.', '', '', 'Accounts Asst.', '', '', 'Village Dir.']);
+  recordsData.push(['Date: ........', '', '', 'Date: ........', '', '', 'Date: ........']);
 
   var ws1 = XLSX.utils.aoa_to_sheet(recordsData);
   // Narrow widths for Portrait A4 fit
-  ws1['!cols'] = [{wch:10}, {wch:25}, {wch:12}, {wch:15}, {wch:6}, {wch:10}, {wch:12}];
+  ws1['!cols'] = [{wch:11}, {wch:23}, {wch:12}, {wch:12}, {wch:5}, {wch:9}, {wch:10}];
   // fitToWidth: 1 limits to 1 page wide. fitToHeight: 0 allows flowing to multiple pages down.
   ws1['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 };
   ws1['!margins'] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
