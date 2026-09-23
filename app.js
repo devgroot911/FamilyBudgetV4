@@ -1430,6 +1430,7 @@ function generateExcelReport(username, month) {
   var profile = state.profiles && state.profiles[username] ? state.profiles[username] : {};
   var motherName = profile.name || username;
   var familyHouse = profile.house || 'N/A';
+  var village = profile.village || 'N/A';
   
   var list = (state.expenses || []).filter(function(e) {
     return e.user === username && e.date.indexOf(month) === 0;
@@ -1437,11 +1438,23 @@ function generateExcelReport(username, month) {
   
   if (list.length === 0) return notify('No records found for ' + motherName + ' in ' + month);
   
-  var recordsData = [['Date', 'Item ID', 'Item Name', 'Category 1', 'Category 2', 'Quantity', 'Unit Price', 'Total Price']];
+  // METADATA Header block
+  var headerBlock = [
+    ['FAMILY BUDGET REPORT', ''],
+    ['Mother Name:', motherName],
+    ['Village:', village],
+    ['Family House Number:', familyHouse],
+    ['Reporting Period:', month],
+    ['', '']
+  ];
+
+  // Sheet 1: Expense Records (Removed Item ID for finance purposes)
+  var recordsData = headerBlock.slice(); 
+  recordsData.push(['Date', 'Item Name', 'Category', 'Sub-category', 'Quantity', 'Unit Price', 'Total Price']);
+  
   var cat2Totals = {};
   var grandTotal = 0;
   var largestSingle = null;
-  
   var itemGroups = {};
   var qualityFlags = [];
   var zeroPriceCount = 0;
@@ -1452,16 +1465,13 @@ function generateExcelReport(username, month) {
     var tPrice = Number(e.total);
     var uPrice = tPrice / (Number(e.quantity) || 1);
     
-    recordsData.push([ e.date, e.id.substring(0,8), e.name, c1, c2, e.quantity, uPrice, tPrice ]);
+    // Pushing data row WITHOUT Item ID
+    recordsData.push([ e.date, e.name, c1, c2, e.quantity, uPrice, tPrice ]);
     
     grandTotal += tPrice;
     cat2Totals[c2] = (cat2Totals[c2] || 0) + tPrice;
-    
     itemGroups[e.name] = (itemGroups[e.name] || 0) + tPrice;
-    
-    if (!largestSingle || tPrice > Number(largestSingle.total)) {
-      largestSingle = e;
-    }
+    if (!largestSingle || tPrice > Number(largestSingle.total)) largestSingle = e;
     if (tPrice <= 0) zeroPriceCount++;
   });
   
@@ -1470,22 +1480,17 @@ function generateExcelReport(username, month) {
   if (qualityFlags.length === 0) qualityFlags.push("Data appears clean. No anomalies detected.");
   
   var ws1 = XLSX.utils.aoa_to_sheet(recordsData);
-  ws1['!cols'] = [{wch:12}, {wch:10}, {wch:30}, {wch:15}, {wch:20}, {wch:10}, {wch:12}, {wch:15}];
+  ws1['!cols'] = [{wch:12}, {wch:35}, {wch:15}, {wch:20}, {wch:10}, {wch:12}, {wch:15}];
   
+  // Sheet 2: Summary & Insights
   var largestCat2 = Object.keys(cat2Totals).reduce(function(a, b) { return cat2Totals[a] > cat2Totals[b] ? a : b; }, Object.keys(cat2Totals)[0] || '');
   var largestItem = Object.keys(itemGroups).reduce(function(a, b) { return itemGroups[a] > itemGroups[b] ? a : b; }, Object.keys(itemGroups)[0] || '');
   
-  var insightsData = [
-    ['REPORT METADATA', ''],
-    ['Mother Name', motherName],
-    ['Family House', familyHouse],
-    ['Report Period', month],
-    ['',''],
-    ['TOTALS', ''],
-    ['Grand Total Expenditure', grandTotal],
-    ['',''],
-    ['CATEGORY 2 SUMMARY', 'Total Expenditure']
-  ];
+  var insightsData = headerBlock.slice(); 
+  insightsData.push(['TOTALS', '']);
+  insightsData.push(['Grand Total Expenditure', grandTotal]);
+  insightsData.push(['','']);
+  insightsData.push(['CATEGORY SUMMARY', 'Total Expenditure']);
   
   Object.keys(cat2Totals).forEach(function(k) {
     if (cat2Totals[k] > 0) insightsData.push([k, cat2Totals[k]]);
@@ -1493,7 +1498,7 @@ function generateExcelReport(username, month) {
   
   insightsData.push(['','']);
   insightsData.push(['AI INSIGHTS', '']);
-  insightsData.push(['Largest Category 2', largestCat2 + ' (' + money(cat2Totals[largestCat2]) + ' - ' + Math.round((cat2Totals[largestCat2]/grandTotal)*100) + '%)']);
+  insightsData.push(['Largest Category', largestCat2 + ' (' + money(cat2Totals[largestCat2]) + ' - ' + Math.round((cat2Totals[largestCat2]/grandTotal)*100) + '%)']);
   
   if (largestItem) {
     insightsData.push(['Combined Top Item Total', largestItem + ' (' + money(itemGroups[largestItem]) + ' - ' + Math.round((itemGroups[largestItem]/grandTotal)*100) + '%)']);
