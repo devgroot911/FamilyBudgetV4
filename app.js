@@ -748,7 +748,8 @@ function renderRecords() {
     Object.keys(state.profiles || {}).forEach(function(u) {
       var p = state.profiles[u];
       var v = p.village || 'Unknown';
-      var isMother = !p.usertype || p.usertype.toLowerCase().indexOf('mother') !== -1 || p.usertype.toLowerCase() === 'mother / yccw';
+      // Strictly check role if available, otherwise fallback to usertype string
+      var isMother = (p.role && p.role.toLowerCase() === 'mother') || (!p.role && p.usertype && p.usertype.toLowerCase().indexOf('mother') !== -1);
       
       if (isMother && (recordState.village === 'All' || recordState.village === v)) {
         availableUsers.push(u);
