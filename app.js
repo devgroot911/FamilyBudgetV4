@@ -7,13 +7,21 @@
 // --- Supabase Init ---
 var SUPABASE_URL = 'https://qgfopifgmvwleohswkxo.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_qA9QPQZ0Nxzs3xbCx8LeXw_z3UF2ezQ';
-var supabase = null;
+var supabaseClient = null;
 try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // The UMD bundle exposes the global as `supabase` (not window.supabase)
+  // createClient is at supabase.createClient
+  var _sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+  if (_sb && _sb.createClient) {
+    supabaseClient = _sb.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } else {
+    throw new Error('supabase library not found on page');
+  }
 } catch (e) {
   console.error('Supabase failed to load:', e);
-  setTimeout(function() { alert('Database failed to load! Please disable any AdBlocker for this site.'); }, 1000);
 }
+// Use supabaseClient everywhere inside this file
+var supabase = supabaseClient;
 
 // --- App State ---
 var isLoggedIn = sessionStorage.getItem('logged_in') === 'true';
