@@ -1440,15 +1440,14 @@ function generateExcelReport(username, month) {
   
   // METADATA Header block
   var headerBlock = [
-    ['FAMILY BUDGET REPORT', ''],
+    ['SOS CHILDREN\'S VILLAGES - FAMILY BUDGET REPORT'],
     ['Mother Name:', motherName],
     ['Village:', village],
     ['Family House Number:', familyHouse],
     ['Reporting Period:', month],
-    ['', '']
+    ['']
   ];
 
-  // Sheet 1: Expense Records (Removed Item ID for finance purposes)
   var recordsData = headerBlock.slice(); 
   recordsData.push(['Date', 'Item Name', 'Category', 'Sub-category', 'Quantity', 'Unit Price', 'Total Price']);
   
@@ -1465,7 +1464,6 @@ function generateExcelReport(username, month) {
     var tPrice = Number(e.total);
     var uPrice = tPrice / (Number(e.quantity) || 1);
     
-    // Pushing data row WITHOUT Item ID
     recordsData.push([ e.date, e.name, c1, c2, e.quantity, uPrice, tPrice ]);
     
     grandTotal += tPrice;
@@ -1479,8 +1477,16 @@ function generateExcelReport(username, month) {
   if (grandTotal === 0) qualityFlags.push("Warning: Grand total is 0.");
   if (qualityFlags.length === 0) qualityFlags.push("Data appears clean. No anomalies detected.");
   
+  // Append Signatures to Sheet 1
+  recordsData.push(['']); recordsData.push(['']); recordsData.push(['']);
+  recordsData.push(['_______________________', '', '', '_______________________', '', '', '_______________________']);
+  recordsData.push(['Signature of Mother', '', '', 'Certified by Accounts Asst.', '', '', 'Approved by Village Dir.']);
+  recordsData.push(['Date: .................', '', '', 'Date: .................', '', '', 'Date: .................']);
+
   var ws1 = XLSX.utils.aoa_to_sheet(recordsData);
-  ws1['!cols'] = [{wch:12}, {wch:35}, {wch:15}, {wch:20}, {wch:10}, {wch:12}, {wch:15}];
+  ws1['!cols'] = [{wch:12}, {wch:32}, {wch:15}, {wch:20}, {wch:10}, {wch:12}, {wch:15}];
+  ws1['!pageSetup'] = { paperSize: 9, orientation: 'landscape', fitToWidth: 1 };
+  ws1['!margins'] = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
   
   // Sheet 2: Summary & Insights
   var largestCat2 = Object.keys(cat2Totals).reduce(function(a, b) { return cat2Totals[a] > cat2Totals[b] ? a : b; }, Object.keys(cat2Totals)[0] || '');
@@ -1513,9 +1519,17 @@ function generateExcelReport(username, month) {
   qualityFlags.forEach(function(flag) {
     insightsData.push([flag, '']);
   });
+
+  // Append Signatures to Sheet 2
+  insightsData.push(['']); insightsData.push(['']); insightsData.push(['']);
+  insightsData.push(['_______________________', '_______________________', '_______________________']);
+  insightsData.push(['Signature of Mother', 'Certified by Accounts Asst.', 'Approved by Village Dir.']);
+  insightsData.push(['Date: .................', 'Date: .................', 'Date: .................']);
   
   var ws2 = XLSX.utils.aoa_to_sheet(insightsData);
-  ws2['!cols'] = [{wch:35}, {wch:35}];
+  ws2['!cols'] = [{wch:35}, {wch:25}, {wch:25}];
+  ws2['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1 };
+  ws2['!margins'] = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
   
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws1, 'Expense Records');
