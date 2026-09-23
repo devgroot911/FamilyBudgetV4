@@ -139,7 +139,8 @@ function getProfile() {
   if (!state.profiles) state.profiles = {};
   var user = sessionStorage.getItem('username') || 'mother';
   if (!state.profiles[user]) {
-    state.profiles[user] = { name: '', usertype: 'Mother / YCCW', village: '', house: '', phone: '', email: '' };
+    var r = sessionStorage.getItem('role') || 'mother';
+      state.profiles[user] = { name: '', usertype: r === 'mother' ? 'Mother / YCCW' : r, village: '', house: '', phone: '', email: '', role: r };
   }
   return state.profiles[user];
 }
@@ -292,8 +293,11 @@ function fetchCloudData() {
         window.loadedUsers = userRes.data;
         if (!state.profiles) state.profiles = {};
         userRes.data.forEach(function(u) {
-          state.profiles[u.username] = { name: u.name || '', usertype: u.usertype || 'Mother / YCCW', village: u.village || '', house: u.house || '', phone: u.phone || '', email: u.email || '' };
-        });
+            var rType = u.usertype;
+            if (!rType) rType = (u.role === 'mother') ? 'Mother / YCCW' : u.role;
+            state.profiles[u.username] = { name: u.name || '', usertype: rType, village: u.village || '', house: u.house || '', phone: u.phone || '', email: u.email || '', role: u.role };
+          });
+          save();
       }
       notify('Cloud sync complete');
       render();
@@ -1224,7 +1228,7 @@ function renderUsers() {
         name: document.querySelector('#new-user-name').value.trim(),
         password: document.querySelector('#new-user-password').value.trim(),
         role: document.querySelector('#new-user-role').value,
-        usertype: 'Mother / YCCW'
+          usertype: (document.querySelector('#new-user-role').value === 'mother' ? 'Mother / YCCW' : document.querySelector('#new-user-role').value)
       })
         .then(function(res) {
           if (res.error) throw res.error;
@@ -1447,7 +1451,9 @@ document.querySelector('#login-form').addEventListener('submit', function(event)
       sessionStorage.setItem('role', validUser.role);
       sessionStorage.setItem('profile_name', validUser.name);
       if (!state.profiles) state.profiles = {};
-      state.profiles[validUser.username] = { name: validUser.name || '', usertype: validUser.usertype || 'Mother / YCCW', village: validUser.village || '', house: validUser.house || '', phone: validUser.phone || '', email: validUser.email || '' };
+      var ruType = validUser.usertype;
+        if (!ruType) ruType = (validUser.role === 'mother') ? 'Mother / YCCW' : validUser.role;
+        state.profiles[validUser.username] = { name: validUser.name || '', usertype: ruType, village: validUser.village || '', house: validUser.house || '', phone: validUser.phone || '', email: validUser.email || '', role: validUser.role };
       save();
       document.querySelector('#login-username').value = '';
       document.querySelector('#login-password').value = '';
