@@ -737,12 +737,27 @@ function renderRecords() {
     var visibleExpenses = getVisibleExpenses();
     
     var availableVillages = [];
-    var availableUsers = [];
-    visibleExpenses.forEach(function(e) {
-      var v = state.profiles && state.profiles[e.user] ? state.profiles[e.user].village : 'Unknown';
-      if (v && availableVillages.indexOf(v) === -1) availableVillages.push(v);
-      if (e.user && availableUsers.indexOf(e.user) === -1) availableUsers.push(e.user);
+    Object.keys(state.profiles || {}).forEach(function(u) {
+      var p = state.profiles[u];
+      var v = p.village || 'Unknown';
+      if (v && v !== 'All' && availableVillages.indexOf(v) === -1) availableVillages.push(v);
     });
+    availableVillages.sort();
+
+    var availableUsers = [];
+    Object.keys(state.profiles || {}).forEach(function(u) {
+      var p = state.profiles[u];
+      var v = p.village || 'Unknown';
+      var isMother = !p.usertype || p.usertype.toLowerCase().indexOf('mother') !== -1 || p.usertype.toLowerCase() === 'mother / yccw';
+      
+      if (isMother && (recordState.village === 'All' || recordState.village === v)) {
+        availableUsers.push(u);
+      }
+    });
+
+    if (recordState.user !== 'All' && availableUsers.indexOf(recordState.user) === -1) {
+      recordState.user = 'All';
+    }
 
     var queryLower = recordState.query.toLowerCase();
     var filtered = visibleExpenses.filter(function(item) {
@@ -814,7 +829,7 @@ function renderRecords() {
     if (monthFilter) monthFilter.addEventListener('change', function(e) { recordState.month = e.target.value; renderRecords(); });
 
     var villageFilter = document.querySelector('#record-village');
-    if (villageFilter) villageFilter.addEventListener('change', function(e) { recordState.village = e.target.value; renderRecords(); });
+    if (villageFilter) villageFilter.addEventListener('change', function(e) { recordState.village = e.target.value; recordState.user = 'All'; renderRecords(); });
 
     var userFilter = document.querySelector('#record-user');
     if (userFilter) userFilter.addEventListener('change', function(e) { recordState.user = e.target.value; renderRecords(); });
