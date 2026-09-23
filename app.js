@@ -342,7 +342,7 @@ function render() {
   if (role.indexOf('admin') !== -1) {
     document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'flex'; });
   } else if (isManager) {
-    var views = ['dashboard', 'reports', 'records'];
+    var views = ['dashboard', 'reports', 'records', 'expenses'];
     if (role.indexOf('accountant') !== -1) views.push('items');
     views.forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
@@ -457,7 +457,7 @@ function renderDashboard() {
     '<div class="section-heading"><div><h2>Recent Activity</h2><small>Latest saved entries</small></div>' + (!isManager ? '<button class="primary-button" data-view="expenses">+ Add expense</button>' : '') + '</div>' +
     '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Category</th><th>User</th><th>Date</th><th>Qty</th><th>Amount</th><th></th></tr></thead><tbody>' +
     (recent.length ? recent.map(function(e) {
-      return '<tr><td><strong>' + escapeHtml(e.name) + '</strong>' + getTranslationsHtml(e.name) + '<br><span class="muted">' + subcat(e.subcategory) + '</span></td><td><span class="category-dot ' + cat(e.category).color + '"></span>' + cat(e.category).name + '</td><td>' + escapeHtml(e.user || 'Unknown') + '</td><td>' + e.date + '</td><td>' + e.quantity + '</td><td class="amount">' + money(e.total) + '</td><td><button class="ghost-button" data-delete-expense="' + e.id + '">Delete</button></td></tr>';
+      return '<tr><td><strong>' + escapeHtml(e.name) + '</strong>' + getTranslationsHtml(e.name) + '<br><span class="muted">' + subcat(e.subcategory) + '</span></td><td><span class="category-dot ' + cat(e.category).color + '"></span>' + cat(e.category).name + '</td><td>' + escapeHtml(e.user || 'Unknown') + '</td><td>' + e.date + '</td><td>' + e.quantity + '</td><td class="amount">' + money(e.total) + '</td><td>' + (isManager ? '<button class="ghost-button" data-edit-expense="' + e.id + '">Edit</button> ' : '') + '<button class="ghost-button" data-delete-expense="' + e.id + '">Delete</button></td></tr>';
     }).join('') : '<tr><td colspan="7" class="empty">No expense entries yet.</td></tr>') +
     '</tbody></table></div>' +
   '</div>';
@@ -699,7 +699,7 @@ function renderRecords() {
       '<div class="field" style="max-width:360px;margin-bottom:18px"><label for="record-search">Search records</label><input id="record-search" value="' + escapeHtml(query) + '" placeholder="Search item, category, user or date"></div>' +
       '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Category</th><th>User</th><th>Date</th><th>Qty</th><th>Amount</th><th></th></tr></thead><tbody>' +
       (filtered.length ? filtered.map(function(expense) {
-        return '<tr><td><strong>' + escapeHtml(expense.name) + '</strong>' + getTranslationsHtml(expense.name) + '<br><span class="muted">' + subcat(expense.subcategory) + '</span></td><td><span class="category-dot ' + cat(expense.category).color + '"></span>' + cat(expense.category).name + '</td><td>' + escapeHtml(expense.user || 'Unknown') + '</td><td>' + expense.date + '</td><td>' + expense.quantity + '</td><td class="amount">' + money(expense.total) + '</td><td><button class="ghost-button" data-delete-expense="' + expense.id + '">Delete</button></td></tr>';
+        return '<tr><td><strong>' + escapeHtml(expense.name) + '</strong>' + getTranslationsHtml(expense.name) + '<br><span class="muted">' + subcat(expense.subcategory) + '</span></td><td><span class="category-dot ' + cat(expense.category).color + '"></span>' + cat(expense.category).name + '</td><td>' + escapeHtml(expense.user || 'Unknown') + '</td><td>' + expense.date + '</td><td>' + expense.quantity + '</td><td class="amount">' + money(expense.total) + '</td><td>' + (isManager ? '<button class="ghost-button" data-edit-expense="' + expense.id + '">Edit</button> ' : '') + '<button class="ghost-button" data-delete-expense="' + expense.id + '">Delete</button></td></tr>';
       }).join('') : '<tr><td colspan="7" class="empty">No expense entries yet.</td></tr>') +
       '</tbody></table></div>' +
     '</div>';
