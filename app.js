@@ -96,12 +96,17 @@ function save() {
   updateHeader();
 }
 function getVisibleExpenses() {
+  // First, filter out any corrupted database rows (missing date or total)
+  var validExpenses = state.expenses.filter(function(e) {
+    return e && e.date && e.total !== null && e.total !== undefined;
+  });
+  
   var role = (sessionStorage.getItem('role') || 'mother').toLowerCase();
   if (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1) {
-    return state.expenses;
+    return validExpenses;
   }
   var myName = sessionStorage.getItem('username') || 'mother';
-  return state.expenses.filter(function(e) { return e.user === myName; });
+  return validExpenses.filter(function(e) { return e.user === myName; });
 }
 function getProfile() {
   if (!state.profiles) state.profiles = {};
