@@ -354,8 +354,12 @@ function renderDashboard() {
   var remaining = totalAllowance - totalSpent;
   var recent = visibleExpenses.slice().sort(function(a, b) { return b.date.localeCompare(a.date); }).slice(0, 10);
   var maxSpent = Math.max.apply(null, categories.map(function(c) { return spent(c.id); }).concat([1]));
+  var role = (sessionStorage.getItem('role') || '').toLowerCase();
+  var isAdminUser = role.indexOf('admin') !== -1;
 
   document.querySelector('#view-dashboard').innerHTML =
+    // Refresh button for admin at top
+    (isAdminUser ? '<div style="text-align:right;margin-bottom:10px"><button class="primary-button" data-action="refresh-dashboard">&#x21bb; Refresh Data</button></div>' : '') +
     '<div class="grid stats-grid">' +
       '<div class="panel stat-card"><span class="stat-label">Spent this month</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">' + visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; }).length + ' recorded entries</div></div>' +
       '<div class="panel stat-card"><span class="stat-label">Available balance</span><div class="stat-value">' + money(remaining) + '</div><div class="stat-note">Against current allowances</div></div>' +
@@ -886,6 +890,15 @@ document.addEventListener('click', function(event) {
     if (action === 'import-backup') importBackup();
     if (action === 'import-csv') importCsv();
     if (action === 'sync-sheet') syncGoogleSheet();
+    if (action === 'refresh-dashboard') {
+      var btn = actionNode;
+      btn.disabled = true;
+      btn.textContent = 'Refreshing...';
+      fetchCloudData();
+      setTimeout(function() {
+        if (btn) { btn.disabled = false; btn.innerHTML = '&#x21bb; Refresh Data'; }
+      }, 2000);
+    }
   }
 });
 
@@ -1008,11 +1021,3 @@ render();
 if (isLoggedIn) {
   fetchCloudData();
 }
-
-// --- Auto-refresh for Admin (every 30 seconds) ---
-// Keeps dashboard live as multiple mothers enter data simultaneously
-setInterval(function() {
-  if (isLoggedIn && (sessionStorage.getItem('role') || '').toLowerCase().indexOf('admin') !== -1) {
-    fetchCloudData();
-  }
-}, 30000);
