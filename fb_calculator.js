@@ -1574,8 +1574,14 @@ window.fbExecuteCrossHouseTransfer = function() {
      
      // Notifications
      if (typeof sendNotification === 'function') {
-         sendNotification(window.fbState.activeVillage, "Accountant transfer of LKR " + amt + " completed for House " + sHouse, "HOUSE:" + sHouse);
-         if (sHouse !== dHouse) sendNotification(window.fbState.activeVillage, "House " + dHouse + " received Accountant transfer of LKR " + amt, "HOUSE:" + dHouse);
+         var senderName = sessionStorage.getItem('profile_name') || sessionStorage.getItem('username') || 'Accountant';
+         
+         if (sHouse === dHouse) {
+             sendNotification(window.fbState.activeVillage, senderName + " transferred LKR " + amt + " internally within House " + sHouse, "HOUSE:" + sHouse);
+         } else {
+             sendNotification(window.fbState.activeVillage, senderName + " transferred LKR " + amt + " from House " + sHouse + " to House " + dHouse, "HOUSE:" + sHouse);
+             sendNotification(window.fbState.activeVillage, "House " + dHouse + " received LKR " + amt + " transfer from House " + sHouse + " (" + senderName + ")", "HOUSE:" + dHouse);
+         }
      }
      
      document.getElementById('xh-amount').value = '';
