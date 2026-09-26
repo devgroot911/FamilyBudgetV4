@@ -1,0 +1,37 @@
+/* FB Calculator Styles */
+#view-fb-calculator {
+  padding: 20px 0;
+}
+
+.fb-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.fb-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-content {
+  flex-grow: 1;
+  min-width: 0; /* allows table to overflow properly */
+}
+
+.fb-nav-btn {
+  text-align: left;
+  justify-content: flex-start;
+  padding: 10px 15px;
+  width: 100%;
+}
+
+.fb-rate-input {
+  width: 120px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}

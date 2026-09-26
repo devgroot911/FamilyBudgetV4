@@ -23,6 +23,7 @@
         <button class="nav-item" data-view="allowances"><span>💰</span> Allowances</button>
         <button class="nav-item" data-view="items"><span>📋</span> Item catalog</button>
         <button class="nav-item" data-view="reports"><span>📄</span> Reports</button>
+        <button class="nav-item" data-view="fb-calculator" id="nav-fb-calculator" style="display:none;"><span>&#128176;</span> FB Calc</button>
         <button class="nav-item" data-view="users" id="nav-users" style="display:none;"><span>👥</span> Manage Users</button>
       </nav>
       <div class="sidebar-footer"><span class="status-dot" style="background:var(--primary)"></span><span>Connected to Cloud</span></div>
@@ -70,7 +71,8 @@
       <section id="view-items" class="view"></section>
       <section id="view-reports" class="view"></section>
       <section id="view-profile" class="view"></section>
-      <section id="view-users" class="view"></section>
+      <section id="view-fb-calculator" class="view"></section>
+        <section id="view-users" class="view"></section>
     </main>
     </div>
 
@@ -80,6 +82,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="app.js?v=37"></script>
+  <script src="fb_calculator.js?v=2"></script>
+  <script src="app.js?v=38"></script>
 </body>
 </html>

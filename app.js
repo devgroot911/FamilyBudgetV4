@@ -366,7 +366,7 @@ function render() {
   if (role.indexOf('admin') !== -1) {
     document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'flex'; });
   } else if (isManager) {
-    var views = ['dashboard', 'reports', 'records', 'expenses', 'items', 'profile'];
+    var views = ['dashboard', 'reports', 'records', 'expenses', 'items', 'profile', 'fb-calculator'];
     views.forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
       if (el) el.style.display = 'flex';
@@ -389,14 +389,14 @@ function render() {
   if (activeEl) activeEl.classList.add('active');
 
   // Page title
-  var titles = { dashboard: 'Dashboard', expenses: 'Expense Entry', records: 'Manage Expenses', allowances: 'Allowances', items: 'Item Master', reports: 'Past Records & Reports', profile: 'Profile & Settings', users: 'Manage Users' };
+  var titles = { dashboard: 'Dashboard', expenses: 'Expense Entry', records: 'Manage Expenses', allowances: 'Allowances', items: 'Item Master', reports: 'Past Records & Reports', profile: 'Profile & Settings', users: 'Manage Users', 'fb-calculator': 'Family Budget Calculator' };
   var titleEl = document.querySelector('#page-title');
   var kickerEl = document.querySelector('#page-kicker');
   if (titleEl) titleEl.textContent = titles[activeView] || activeView;
   if (kickerEl) kickerEl.textContent = activeView === 'dashboard' ? 'HOUSEHOLD LEDGER' : 'FAMILY BUDGET / ' + (titles[activeView] || '').toUpperCase();
 
   // Render view
-  var renderers = { dashboard: renderDashboard, expenses: renderExpenses, records: renderRecords, allowances: renderAllowances, items: renderItems, reports: renderReports, profile: renderProfile, users: renderUsers };
+  var renderers = { dashboard: renderDashboard, expenses: renderExpenses, records: renderRecords, allowances: renderAllowances, items: renderItems, reports: renderReports, profile: renderProfile, users: renderUsers, 'fb-calculator': window.renderFbCalculator || function(){} };
   if (renderers[activeView]) renderers[activeView]();
   if (activeView === 'expenses') { enhanceExpenseForm(); }
   updateHeader();
