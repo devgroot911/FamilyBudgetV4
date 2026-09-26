@@ -29,23 +29,38 @@ var DEFAULT_RATES = {
 
 var style = document.createElement('style');
 style.innerHTML = 
-  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.55); z-index:999999; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }' +
-  '.fb-modal-content { margin:auto; background:#fff; width:100%; max-width:650px; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
-  '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; }' +
-  '.fb-modal-body { padding:20px; overflow-y:auto; flex:1; font-size:14px; line-height:1.5; color:#444; }' +
-  '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:15px 20px; text-align:right; }' +
-  '.fb-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }' +
-  '.fb-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }' +
-  '.fb-box { background:#fff; border:1px solid #eaeaea; padding:12px; border-radius:6px; }' +
-  '.fb-box h4 { margin:0 0 10px 0; font-size:13px; color:#555; text-transform:uppercase; border-bottom:1px solid #f0f0f0; padding-bottom:5px; }' +
-  '.fb-label { display:block; font-size:12px; color:#666; font-weight:bold; margin-bottom:5px; }' +
-  '.fb-value { font-size:16px; font-weight:bold; color:#222; }' +
-  '.fb-highlight { color:#2980b9; }' +
-  '.fb-success { color:#27ae60; }' +
-  '.fb-danger { color:#c0392b; background:#fadbd8; padding:2px 6px; border-radius:4px; font-size:11px; }' +
-  '.fb-table td { padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; }' +
-  '.fb-table td:first-child { color: #666; }' +
-  '.fb-table td:last-child { text-align: right; font-weight: bold; }';
+  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:999999; align-items:center; justify-content:center; padding:15px; box-sizing:border-box; overflow-y:auto; }' +
+  '.fb-modal-content { margin:auto; background:#fff; width:100%; max-width:700px; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
+  '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:12px 20px; font-weight:bold; font-size:16px; color:#333; }' +
+  '.fb-modal-body { padding:15px 20px; overflow-y:auto; flex:1; font-size:13px; line-height:1.4; color:#444; }' +
+  '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:12px 20px; text-align:right; }' +
+  
+  '.fb-layout { display: flex; flex-direction: column; gap: 15px; align-items: stretch; }' +
+  '@media(min-width: 850px) { .fb-layout { flex-direction: row; align-items: flex-start; } .fb-sidebar { flex: 0 0 220px; position: sticky; top: 20px; } .fb-content { flex: 1; min-width: 0; } }' +
+  
+  '.fb-grid-2 { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }' +
+  '.fb-grid-3, .fb-grid-4 { display: grid; gap: 10px; }' +
+  '@media(min-width: 500px) { .fb-grid-3, .fb-grid-4 { grid-template-columns: repeat(2, 1fr); } }' +
+  '@media(min-width: 900px) { .fb-grid-3 { grid-template-columns: repeat(3, 1fr); } .fb-grid-4 { grid-template-columns: repeat(4, 1fr); } }' +
+  
+  '.fb-box { background:#fcfcfc; border:1px solid #eaeaea; padding:12px; border-radius:6px; }' +
+  '.fb-box h4 { margin:0 0 10px 0; font-size:12px; color:#555; text-transform:uppercase; border-bottom:1px solid #eee; padding-bottom:5px; }' +
+  
+  '.fb-label { display:block; font-size:11px; color:#777; font-weight:bold; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px; }' +
+  '.fb-value { font-size:14px; font-weight:bold; color:#222; }' +
+  '.fb-highlight { color:#2980b9; } .fb-success { color:#27ae60; } ' +
+  '.fb-danger { color:#c0392b; background:#fadbd8; padding:2px 4px; border-radius:3px; font-size:11px; }' +
+  
+  '.fb-nav-btn { display:block; width:100%; text-align:left; margin-bottom:5px; padding:10px 12px; border-radius:4px; border:none; background:transparent; cursor:pointer; color:#555; font-size:14px; transition:all 0.2s ease; }' +
+  '.fb-nav-btn:hover { background:#f5f5f5; color:#333; }' +
+  '.fb-nav-btn.active { background:#e8f4f8; color:#2980b9; font-weight:bold; }' +
+  
+  '.fb-compact-input { padding: 6px 10px; font-size: 13px; height: auto; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }' +
+  '.fb-table-wrap { width: 100%; overflow-x: auto; background: #fff; border-radius: 6px; border: 1px solid #eee; }' +
+  '.fb-data-table { width: 100%; border-collapse: collapse; min-width: 800px; font-size: 12px; }' +
+  '.fb-data-table th { background: #f9f9f9; padding: 10px; text-align: left; color: #555; border-bottom: 2px solid #eee; }' +
+  '.fb-data-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; }' +
+  '.fb-data-table tr:hover { background: #fcfcfc; }';
 document.head.appendChild(style);
 
 // ------------------------------------------------------------------
@@ -235,8 +250,6 @@ window.fbUpdateLocalCount = function(houseNo, field, val) {
   }
   existing[field] = Number(val) || 0;
   window.fbState.hasUnsavedChanges = true;
-  
-  // Update UI dynamically without destroying the DOM to keep TAB focus intact!
   fbUpdateLiveBalances(houseNo);
 };
 
@@ -324,19 +337,20 @@ window.renderFbCalculator = function() {
   
   document.querySelector('#view-fb-calculator').innerHTML = 
     '<div class="fb-layout">' +
-      '<div class="fb-sidebar panel">' +
-        '<h3 style="margin-top:0">Budget Allocation</h3>' +
-        '<div style="margin-bottom:20px; display:flex; flex-direction:column; gap:8px;">' +
-          '<label class="fb-label">Period</label>' +
-          '<select id="fb-sel-month" onchange="fbChangePeriod()" class="form-control">' + monthOptions + '</select>' +
-          '<select id="fb-sel-year" onchange="fbChangePeriod()" class="form-control">' +
+      '<div class="fb-sidebar panel" style="padding:15px;">' +
+        '<h3 style="margin-top:0; margin-bottom:15px; font-size:16px;">Family Budget</h3>' +
+        '<div style="margin-bottom:15px; display:flex; flex-direction:column; gap:8px;">' +
+          '<label class="fb-label">Month</label>' +
+          '<select id="fb-sel-month" onchange="fbChangePeriod()" class="form-control fb-compact-input">' + monthOptions + '</select>' +
+          '<label class="fb-label">Year</label>' +
+          '<select id="fb-sel-year" onchange="fbChangePeriod()" class="form-control fb-compact-input">' +
             '<option value="2024" '+(y===2024?'selected':'')+'>2024</option><option value="2025" '+(y===2025?'selected':'')+'>2025</option><option value="2026" '+(y===2026?'selected':'')+'>2026</option>' +
           '</select>' +
-        '</div><hr>' +
-        '<button class="ghost-button fb-nav-btn" data-subview="villages">Villages</button>' +
-        '<button class="ghost-button fb-nav-btn" data-subview="dashboard" id="fb-nav-dashboard" style="display:none">Dashboard</button>' +
-        '<button class="ghost-button fb-nav-btn" data-subview="rates" id="fb-nav-rates" style="display:none">Rates</button>' +
-        '<button class="ghost-button fb-nav-btn" data-subview="entry" id="fb-nav-entry" style="display:none">Data Entry</button>' +
+        '</div><hr style="margin:15px 0; border:0; border-top:1px solid #eee;">' +
+        '<button class="fb-nav-btn" data-subview="villages">Villages</button>' +
+        '<button class="fb-nav-btn" data-subview="dashboard" id="fb-nav-dashboard" style="display:none">Dashboard</button>' +
+        '<button class="fb-nav-btn" data-subview="entry" id="fb-nav-entry" style="display:none">Data Entry</button>' +
+        '<button class="fb-nav-btn" data-subview="rates" id="fb-nav-rates" style="display:none">Global Rates</button>' +
       '</div>' +
       '<div class="fb-content" id="fb-subview-container"></div>' +
     '</div>' +
@@ -365,116 +379,116 @@ function fbRenderSubView() {
   if (!container) return;
   
   document.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
-    btn.style.fontWeight = btn.dataset.subview === window.fbState.currentSubView ? 'bold' : 'normal';
-    btn.style.background = btn.dataset.subview === window.fbState.currentSubView ? '#f5f5f5' : 'transparent';
+      if (btn.dataset.subview === window.fbState.currentSubView) btn.classList.add('active');
+      else btn.classList.remove('active');
   });
   
-      var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
-      var ratesBtn = document.getElementById('fb-nav-rates');
-      if (ratesBtn) ratesBtn.style.display = isDirector ? 'block' : 'none';
-      
-      var hasProj = !!window.fbState.activeVillage;
-      ['dashboard', 'entry'].forEach(function(id) {
-        var el = document.getElementById('fb-nav-dashboard');
-        if (id==='dashboard') { el = document.getElementById('fb-nav-dashboard'); if(el) el.style.display = hasProj ? 'block' : 'none'; }
-        if (id==='entry') { el = document.getElementById('fb-nav-entry'); if(el) el.style.display = hasProj ? 'block' : 'none'; }
-      });
-      
-      if (window.fbState.loading) return container.innerHTML = '<div class="empty">Loading...</div>';
-      
-      switch(window.fbState.currentSubView) {
-        case 'villages': return fbRenderProjects(container);
-        case 'dashboard': return fbRenderDashboard(container);
-        case 'rates': return fbRenderRates(container);
-        case 'entry': return fbRenderEntry(container);
-        default: container.innerHTML = '<div class="empty">Select a view</div>';
-      }
-    }
-    
-    // ------------------------------------------------------------------
-    // Sub Views
-    // ------------------------------------------------------------------
-    function fbRenderProjects(container) {
-      var html = '<div class="panel"><div class="section-heading"><div><h2>Villages</h2><small>Select a village</small></div></div>';
-      if (window.fbState.myVillages.length === 0) {
-        html += '<p>No villages assigned.</p>';
-      } else {
-        html += '<div class="grid two-col">';
-        window.fbState.myVillages.forEach(function(vName) {
-          html += '<div class="panel" style="cursor:pointer; border:1px solid #eaeaea;" onclick="fbSelectVillage(\'' + vName + '\')"><h3>' + vName + '</h3></div>';
-        });
-        html += '</div>';
-      }
-      container.innerHTML = html + '</div>';
-    }
-    
-    window.fbSelectVillage = function(vName) {
-      var proceed = function() {
-          window.fbState.hasUnsavedChanges = false;
-          window.fbState.activeVillage = vName;
-          window.fbState.editingHouseNo = null; 
-          window.fbState.currentSubView = 'entry';
-          loadVillageData();
-      };
-      if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
-      else proceed();
-    };
-    
-    function fbRenderDashboard(container) {
-      var vName = window.fbState.activeVillage;
-      if (!vName) return;
-      var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0;
-      
-      var houses = getVillageHouses(vName);
-      houses.forEach(function(h) {
-        var prev = getPreviousBalances(h.house_no, window.fbState.activeYear, window.fbState.activeMonth);
-        var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {};
-        var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
-        totalBudget += calcs.total_budget;
-        totalFood += calcs.total_food;
-        totalClothing += calcs.total_clothing;
-        totalHH += calcs.total_hh;
-      });
-      
-      container.innerHTML = 
-        '<div class="panel">' +
-          '<div class="section-heading"><div><h2>Dashboard</h2><small>' + vName + '</small></div></div>' +
-          '<div class="fb-grid-4">' +
-            '<div class="fb-box"><span class="fb-label">Total Allocated Budget</span><div class="fb-value">LKR ' + totalBudget.toLocaleString() + '</div></div>' +
-            '<div class="fb-box"><span class="fb-label">Food Allocated</span><div class="fb-value">LKR ' + totalFood.toLocaleString() + '</div></div>' +
-            '<div class="fb-box"><span class="fb-label">Clothing Allocated</span><div class="fb-value">LKR ' + totalClothing.toLocaleString() + '</div></div>' +
-            '<div class="fb-box"><span class="fb-label">Household Allocated</span><div class="fb-value">LKR ' + totalHH.toLocaleString() + '</div></div>' +
-          '</div>' +
-        '</div>';
-    }
-    
-    function fbRenderRates(container) {
-      var rates = window.fbState.rateVariables;
-      var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
-      var html = '<div class="panel"><div class="section-heading"><div><h2>Global Rates</h2><small>System calculation variables (Applies to ALL Villages)</small></div></div><div class="table-wrap"><table><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>';
-      
-      Object.keys(DEFAULT_RATES).forEach(function(k) {
-        var val = (rates.find(function(r) { return r.variable_key === k; }) || {}).value;
-        if (val === undefined) val = DEFAULT_RATES[k];
-        var disabled = (k.indexOf('_pct') !== -1 && !isDirector) ? 'disabled' : '';
-        html += '<tr><td><strong>' + k + '</strong></td><td><input type="number" step="0.0001" value="' + val + '" id="rate_' + k + '" class="form-control" ' + disabled + ' /></td></tr>';
-      });
-      
-      container.innerHTML = html + '</tbody></table></div><div class="button-row"><button class="primary-button" onclick="fbSaveRates()">Save Global Rates</button></div></div>';
-    }
-    
-    window.fbSaveRates = function() {
-      var upserts = Object.keys(DEFAULT_RATES).map(function(k) {
-        return { village: 'ALL', year: window.fbState.activeYear, month: window.fbState.activeMonth, variable_key: k, value: document.getElementById('rate_' + k).value, updated_by: sessionStorage.getItem('username') };
-      });
-      supabase.from('fb_rate_variables').upsert(upserts, { onConflict: 'village, year, month, variable_key' }).then(function(res) {
-        if (res.error) throw res.error;
-        fbAlert('Global Rates saved successfully.');
-        loadFbData();
-      }).catch(function(err) {
-        fbAlert('Error saving rates. Have you run the SQL migration? ' + err.message);
-      });
-    };
+  var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
+  var ratesBtn = document.getElementById('fb-nav-rates');
+  if (ratesBtn) ratesBtn.style.display = isDirector ? 'block' : 'none';
+  
+  var hasProj = !!window.fbState.activeVillage;
+  ['dashboard', 'entry'].forEach(function(id) {
+    var el = document.getElementById('fb-nav-' + id);
+    if(el) el.style.display = hasProj ? 'block' : 'none';
+  });
+  
+  if (window.fbState.loading) return container.innerHTML = '<div class="panel" style="padding:20px;">Loading data...</div>';
+  
+  switch(window.fbState.currentSubView) {
+    case 'villages': return fbRenderProjects(container);
+    case 'dashboard': return fbRenderDashboard(container);
+    case 'rates': return fbRenderRates(container);
+    case 'entry': return fbRenderEntry(container);
+    default: container.innerHTML = '<div class="panel" style="padding:20px;">Select a view</div>';
+  }
+}
+
+// ------------------------------------------------------------------
+// Sub Views
+// ------------------------------------------------------------------
+function fbRenderProjects(container) {
+  var html = '<div class="panel" style="padding:20px;"><div class="section-heading" style="margin-bottom:20px;"><div><h2 style="margin:0; font-size:18px;">Villages</h2><small>Select a village</small></div></div>';
+  if (window.fbState.myVillages.length === 0) {
+    html += '<p>No villages assigned.</p>';
+  } else {
+    html += '<div class="fb-grid-3">';
+    window.fbState.myVillages.forEach(function(vName) {
+      html += '<div class="fb-box" style="cursor:pointer; text-align:center; padding:20px 10px; transition:transform 0.2s ease;" onmouseover="this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\'scale(1)\'" onclick="fbSelectVillage(\'' + vName + '\')"><h3 style="margin:0; font-size:15px; color:#2c3e50;">' + vName + '</h3></div>';
+    });
+    html += '</div>';
+  }
+  container.innerHTML = html + '</div>';
+}
+
+window.fbSelectVillage = function(vName) {
+  var proceed = function() {
+      window.fbState.hasUnsavedChanges = false;
+      window.fbState.activeVillage = vName;
+      window.fbState.editingHouseNo = null; 
+      window.fbState.currentSubView = 'entry';
+      loadVillageData();
+  };
+  if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
+  else proceed();
+};
+
+function fbRenderDashboard(container) {
+  var vName = window.fbState.activeVillage;
+  if (!vName) return;
+  var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0;
+  
+  var houses = getVillageHouses(vName);
+  houses.forEach(function(h) {
+    var prev = getPreviousBalances(h.house_no, window.fbState.activeYear, window.fbState.activeMonth);
+    var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {};
+    var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
+    totalBudget += calcs.total_budget;
+    totalFood += calcs.total_food;
+    totalClothing += calcs.total_clothing;
+    totalHH += calcs.total_hh;
+  });
+  
+  container.innerHTML = 
+    '<div class="panel" style="padding:20px;">' +
+      '<div class="section-heading" style="margin-bottom:20px;"><div><h2 style="margin:0; font-size:18px;">Dashboard</h2><small>' + vName + '</small></div></div>' +
+      '<div class="fb-grid-4">' +
+        '<div class="fb-box"><span class="fb-label">Total Allocated</span><div class="fb-value">LKR ' + totalBudget.toLocaleString() + '</div></div>' +
+        '<div class="fb-box"><span class="fb-label">Food Allocated</span><div class="fb-value">LKR ' + totalFood.toLocaleString() + '</div></div>' +
+        '<div class="fb-box"><span class="fb-label">Clothing Allocated</span><div class="fb-value">LKR ' + totalClothing.toLocaleString() + '</div></div>' +
+        '<div class="fb-box"><span class="fb-label">Household Allocated</span><div class="fb-value">LKR ' + totalHH.toLocaleString() + '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function fbRenderRates(container) {
+  var rates = window.fbState.rateVariables;
+  var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
+  var html = '<div class="panel" style="padding:20px;"><div class="section-heading" style="margin-bottom:20px;"><div><h2 style="margin:0; font-size:18px;">Global Rates</h2><small>System calculation variables (Applies to ALL Villages)</small></div></div>' +
+             '<div class="fb-table-wrap"><table class="fb-data-table"><thead><tr><th>Variable Name</th><th>Value (LKR / % )</th></tr></thead><tbody>';
+  
+  Object.keys(DEFAULT_RATES).forEach(function(k) {
+    var val = (rates.find(function(r) { return r.variable_key === k; }) || {}).value;
+    if (val === undefined) val = DEFAULT_RATES[k];
+    var disabled = (k.indexOf('_pct') !== -1 && !isDirector) ? 'disabled' : '';
+    html += '<tr><td><strong>' + k + '</strong></td><td><input type="number" step="0.0001" value="' + val + '" id="rate_' + k + '" class="form-control fb-compact-input" style="max-width:200px;" ' + disabled + ' /></td></tr>';
+  });
+  
+  container.innerHTML = html + '</tbody></table></div><div style="margin-top:15px; text-align:right;"><button class="primary-button" onclick="fbSaveRates()">Save Global Rates</button></div></div>';
+}
+
+window.fbSaveRates = function() {
+  var upserts = Object.keys(DEFAULT_RATES).map(function(k) {
+    return { village: 'ALL', year: window.fbState.activeYear, month: window.fbState.activeMonth, variable_key: k, value: document.getElementById('rate_' + k).value, updated_by: sessionStorage.getItem('username') };
+  });
+  supabase.from('fb_rate_variables').upsert(upserts, { onConflict: 'village, year, month, variable_key' }).then(function(res) {
+    if (res.error) throw res.error;
+    fbAlert('Global Rates saved successfully.');
+    loadFbData();
+  }).catch(function(err) {
+    fbAlert('Error saving rates. Have you run the SQL migration? ' + err.message);
+  });
+};
 
 window.fbEditHouseForm = function(hNo, selectElement) {
   if (!hNo) {
@@ -482,27 +496,22 @@ window.fbEditHouseForm = function(hNo, selectElement) {
     fbRenderSubView();
     return;
   }
-  
   var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(hNo); });
   var proceed = function() {
       window.fbState.hasUnsavedChanges = false;
       window.fbState.editingHouseNo = String(hNo);
       fbRenderSubView();
   };
-  var cancel = function() {
-      if (selectElement) selectElement.value = window.fbState.editingHouseNo || ''; 
-  };
+  var cancel = function() { if (selectElement) selectElement.value = window.fbState.editingHouseNo || ''; };
   
   if (counts && counts.id && window.fbState.editingHouseNo !== String(hNo)) {
      fbConfirm("This house already has a saved record. Do you want to edit it?", proceed, cancel);
      return;
   }
-  
   if (window.fbState.hasUnsavedChanges && window.fbState.editingHouseNo !== String(hNo)) {
      fbConfirm("Discard unsaved changes?", proceed, cancel);
      return;
   }
-  
   proceed();
 };
 
@@ -513,21 +522,24 @@ function fbRenderEntry(container) {
   var activeHouses = getVillageHouses(vName);
   
   var html = 
-    '<div class="panel" style="margin-bottom:15px;">' +
-      '<div class="grid" style="grid-template-columns: 1fr 1.5fr auto; gap: 15px; align-items:end;">' +
-        '<div><label class="fb-label">Village</label><select onchange="fbSelectVillage(this.value)" class="form-control">' +
-        '<option value="">-- Select --</option>' + window.fbState.myVillages.map(function(v) { return '<option value="'+v+'" '+(vName===v?'selected':'')+'>'+v+'</option>'; }).join('') +
-        '</select></div>' +
-        
-        '<div><label class="fb-label">House / Mother</label><select onchange="fbEditHouseForm(this.value, this)" class="form-control">' +
-        '<option value="">-- Select --</option>';
+    '<div class="panel" style="margin-bottom:15px; padding:15px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">' +
+        '<div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-end;">' +
+          '<div><label class="fb-label">Village</label><select onchange="fbSelectVillage(this.value)" class="form-control fb-compact-input" style="min-width:180px;">' +
+          '<option value="">-- Select --</option>' + window.fbState.myVillages.map(function(v) { return '<option value="'+v+'" '+(vName===v?'selected':'')+'>'+v+'</option>'; }).join('') +
+          '</select></div>' +
+          
+          '<div><label class="fb-label">House / Mother</label><select onchange="fbEditHouseForm(this.value, this)" class="form-control fb-compact-input" style="min-width:220px;">' +
+          '<option value="">-- Select --</option>';
   
   activeHouses.forEach(function(h) {
      var isSaved = (window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {}).id;
      html += '<option value="' + h.house_no + '" ' + (hNo === h.house_no ? 'selected' : '') + '>House ' + h.house_no + ' (' + h.mother_name + ')' + (isSaved ? '  ✅ [Saved]' : '') + '</option>';
   });
   
-  html += '</select></div><div><button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Summary</button></div></div>';
+  html += '</select></div></div>' +
+          '<div><button class="ghost-button" onclick="fbDownloadTemplate()" style="padding:6px 12px; font-size:12px;">&#11015; Excel Summary</button></div>' +
+      '</div>';
   
   if (hNo) {
     var houseData = activeHouses.find(function(h) { return h.house_no === hNo; });
@@ -535,79 +547,76 @@ function fbRenderEntry(container) {
     var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(hNo); }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
     
-    html += '<hr style="margin:20px 0; border:0; border-top:1px solid #eee;">' +
-      '<div style="display:flex; justify-content:space-between; margin-bottom:15px;">' +
-        '<h3 style="margin:0;">Data Entry</h3>' +
-        (window.fbState.hasUnsavedChanges ? '<span class="fb-danger">Unsaved Changes</span>' : '') +
-      '</div>' +
-      
-      '<div class="fb-grid-4" style="margin-bottom:15px; background:#f9f9f9; padding:10px; border-radius:4px; font-size:12px;">' +
-        '<div><strong>Prev Food Bal:</strong> ' + prev.food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-        '<div><strong>Prev Cloth Bal:</strong> ' + prev.clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-        '<div><strong>Prev HH Bal:</strong> ' + prev.household.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-        '<div><strong>Prev Int Bal:</strong> ' + prev.interest.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+    html += '<hr style="margin:15px 0; border:0; border-top:1px solid #eee;">' +
+      '<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">' +
+        '<h3 style="margin:0; font-size:16px;">Data Entry</h3>' +
+        (window.fbState.hasUnsavedChanges ? '<span class="fb-danger" style="font-weight:bold; padding:4px 8px; border-radius:4px;">Unsaved Changes</span>' : '') +
       '</div>' +
       
       '<div class="fb-grid-3" style="margin-bottom:15px;">' +
-        '<div><label class="fb-label">Children >12</label><input type="text" class="form-control" value="'+(counts.food_o12||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'food_o12\')"></div>' +
-        '<div><label class="fb-label">Children <12</label><input type="text" class="form-control" value="'+(counts.food_u12||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'food_u12\')"></div>' +
-        '<div><label class="fb-label">Mothers</label><input type="text" class="form-control" value="'+(counts.mother_count||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'mother_count\')"></div>' +
-      '</div>' + 
-      
-      '<div class="fb-grid-3" style="margin-bottom:20px;">' +
-        '<div class="fb-box"><h4>Allowances (Math)</h4>' +
-          '<label class="fb-label">Aunt Amt</label><input type="text" class="form-control" value="' + (counts.aunt_amount||0) + '" onblur="fbExcelInput(this, \''+hNo+'\', \'aunt_amount\')" style="margin-bottom:8px;">' +
-          '<label class="fb-label">Adjustments</label><input type="text" class="form-control" value="' + (counts.adjustment||0) + '" onblur="fbExcelInput(this, \''+hNo+'\', \'adjustment\')"></div>' +
-        '<div class="fb-box"><h4>Withdrawals</h4>' +
-          '<label class="fb-label">Actual Clothing</label><input type="text" class="form-control" value="' + calcs.actual_clothing_w + '" onblur="fbExcelInput(this, \''+hNo+'\', \'clothing_o12\')" style="margin-bottom:8px;">' +
-          '<label class="fb-label">Actual Household</label><input type="text" class="form-control" value="' + calcs.actual_household_w + '" onblur="fbExcelInput(this, \''+hNo+'\', \'clothing_u12\')"></div>' +
-        '<div class="fb-box"><h4>Interest & Charges</h4>' +
-          '<label class="fb-label">Interest Received</label><input type="text" class="form-control" value="' + calcs.interest_earned + '" onblur="fbExcelInput(this, \''+hNo+'\', \'household\')" style="margin-bottom:8px;">' +
-          '<label class="fb-label">Bank Charges</label><input type="text" class="form-control" value="' + calcs.bank_charges + '" onblur="fbExcelInput(this, \''+hNo+'\', \'arrears\')"></div>' +
-      '</div>' + 
-      
-      '<div class="fb-box" style="display:flex; justify-content:space-between; align-items:center; background:#fafafa;">' +
-        '<div class="fb-grid-4" style="flex:1; margin-right:20px; gap:20px;">' +
-          '<div><span class="fb-label">End Food Bal</span><span id="live_food_bal" class="fb-value '+(calcs.food_balance<0?'fb-danger':'')+'">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">End Clothing Bal</span><span id="live_cloth_bal" class="fb-value '+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">End HH Bal</span><span id="live_hh_bal" class="fb-value '+(calcs.household_balance<0?'fb-danger':'')+'">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">End Interest Bal</span><span id="live_int_bal" class="fb-value '+(calcs.interest_balance<0?'fb-danger':'fb-success')+'">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+        '<div class="fb-box"><h4>1. Demographics & Additions</h4>' +
+          '<div class="fb-grid-2">' +
+            '<div><label class="fb-label">Child >12</label><input type="text" class="form-control fb-compact-input" value="'+(counts.food_o12||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'food_o12\')"></div>' +
+            '<div><label class="fb-label">Child <12</label><input type="text" class="form-control fb-compact-input" value="'+(counts.food_u12||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'food_u12\')"></div>' +
+            '<div><label class="fb-label">Mothers</label><input type="text" class="form-control fb-compact-input" value="'+(counts.mother_count||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'mother_count\')"></div>' +
+            '<div><label class="fb-label">Aunt Amt</label><input type="text" class="form-control fb-compact-input" value="'+(counts.aunt_amount||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'aunt_amount\')"></div>' +
+            '<div><label class="fb-label">Adjustments</label><input type="text" class="form-control fb-compact-input" value="'+(counts.adjustment||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'adjustment\')"></div>' +
+            '<div><label class="fb-label">Interest</label><input type="text" class="form-control fb-compact-input" value="'+calcs.interest_earned+'" onblur="fbExcelInput(this, \''+hNo+'\', \'household\')"></div>' +
+          '</div>' +
         '</div>' +
-        '<button class="primary-button" onclick="fbReviewAndSave(\''+hNo+'\')">Review & Save</button>' +
+        
+        '<div class="fb-box"><h4>2. Withdrawals & Charges</h4>' +
+          '<div class="fb-grid-2">' +
+            '<div style="grid-column:span 2;"><label class="fb-label">Actual Clothing</label><input type="text" class="form-control fb-compact-input" value="'+calcs.actual_clothing_w+'" onblur="fbExcelInput(this, \''+hNo+'\', \'clothing_o12\')"></div>' +
+            '<div style="grid-column:span 2;"><label class="fb-label">Actual Household</label><input type="text" class="form-control fb-compact-input" value="'+calcs.actual_household_w+'" onblur="fbExcelInput(this, \''+hNo+'\', \'clothing_u12\')"></div>' +
+            '<div style="grid-column:span 2;"><label class="fb-label">Bank Charges</label><input type="text" class="form-control fb-compact-input" value="'+calcs.bank_charges+'" onblur="fbExcelInput(this, \''+hNo+'\', \'arrears\')"></div>' +
+          '</div>' +
+        '</div>' +
+        
+        '<div class="fb-box" style="background:#f4f9f9; border-color:#d4e6e6; display:flex; flex-direction:column; justify-content:space-between;">' +
+          '<div>' +
+            '<h4>3. Live End Balances</h4>' +
+            '<div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span class="fb-label" style="margin:0;">Food</span><span id="live_food_bal" class="fb-value '+(calcs.food_balance<0?'fb-danger':'')+'">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+            '<div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span class="fb-label" style="margin:0;">Clothing</span><span id="live_cloth_bal" class="fb-value '+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+            '<div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span class="fb-label" style="margin:0;">Household</span><span id="live_hh_bal" class="fb-value '+(calcs.household_balance<0?'fb-danger':'')+'">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+            '<div style="display:flex; justify-content:space-between; margin-bottom:15px;"><span class="fb-label" style="margin:0;">Interest</span><span id="live_int_bal" class="fb-value '+(calcs.interest_balance<0?'fb-danger':'fb-success')+'">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+          '</div>' +
+          '<button class="primary-button" style="width:100%; padding:8px 0; font-size:14px; font-weight:bold; background:#16a085; border-color:#16a085;" onclick="fbReviewAndSave(\''+hNo+'\')">Review & Save</button>' +
+        '</div>' +
       '</div>';
   }
   html += '</div>';
   
-  html += '<div class="panel" style="overflow-x:auto;">' +
-    '<h3>Balance Overview</h3>' +
-    '<table class="data-table" style="min-width:900px; font-size:12px; width:100%; border-collapse:collapse;">' +
-      '<thead style="background:#f5f5f5; text-align:left;"><tr>' +
-        '<th style="padding:8px">House</th><th style="padding:8px">Mother Snapshot</th><th style="padding:8px">Savings</th>' +
-        '<th style="padding:8px">1st W</th><th style="padding:8px">2nd W</th><th style="padding:8px">Food Bal</th><th style="padding:8px">Clothing Bal</th>' +
-        '<th style="padding:8px">HH Bal</th><th style="padding:8px">Int Bal</th>' +
+  html += '<div class="panel" style="padding:15px;">' +
+    '<h3 style="margin-top:0; margin-bottom:15px; font-size:16px;">Balance Overview</h3>' +
+    '<div class="fb-table-wrap"><table class="fb-data-table">' +
+      '<thead><tr>' +
+        '<th>House</th><th>Mother Snapshot</th><th>Savings</th>' +
+        '<th>1st W</th><th>2nd W</th><th>Food Bal</th><th>Clothing Bal</th>' +
+        '<th>HH Bal</th><th>Int Bal</th>' +
       '</tr></thead><tbody>';
       
   activeHouses.forEach(function(h) {
     var prev = getPreviousBalances(h.house_no, window.fbState.activeYear, window.fbState.activeMonth);
     var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
-    var isSel = hNo === h.house_no ? 'background:#f0f7f4; font-weight:bold;' : 'border-bottom:1px solid #eee;';
+    var isSel = hNo === h.house_no ? 'background:#f0f7f4; font-weight:bold;' : '';
     
     html += 
       '<tr style="'+isSel+' cursor:pointer;" onclick="fbEditHouseForm(\''+h.house_no+'\')">' +
-        '<td style="padding:6px 8px;">House ' + h.house_no + '</td>' +
-        '<td style="padding:6px 8px;">' + (counts.mother_name || h.mother_name + ' (Unsaved)') + '</td>' +
-        '<td style="padding:6px 8px;" class="fb-highlight">' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:6px 8px;">' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:6px 8px;">' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:6px 8px;">' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:6px 8px;">' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:6px 8px;">' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:6px 8px;" class="fb-success">' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td>House ' + h.house_no + '</td>' +
+        '<td>' + (counts.mother_name || h.mother_name + ' (Unsaved)') + '</td>' +
+        '<td class="fb-highlight">' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td>' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td>' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td>' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td>' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td>' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td class="fb-success">' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
       '</tr>';
   });
   
-  container.innerHTML = html + '</tbody></table></div>';
+  container.innerHTML = html + '</tbody></table></div></div>';
 }
 
 window.fbDownloadTemplate = function() {
@@ -682,7 +691,7 @@ window.fbReviewAndSave = function(houseNo) {
 
         html += '<div class="fb-box" style="margin-bottom:10px;">' +
                 '<label class="fb-label">' + od.label + ' Overdraft: LKR ' + od.amount.toLocaleString(undefined, {minimumFractionDigits:2}) + '</label>' +
-                '<select id="od_resolve_' + od.field + '" class="form-control">' +
+                '<select id="od_resolve_' + od.field + '" class="form-control fb-compact-input">' +
                    '<option value="none">Keep Negative Balance (Carry Forward)</option>' +
                    '<option value="food_balance">' + foodLabel + '</option>' +
                    '<option value="interest_balance">' + intLabel + '</option>' +
@@ -793,7 +802,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
           '<div><span class="fb-label">Clothing Alloc</span>LKR ' + calcs.total_clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">HH Alloc</span>LKR ' + calcs.total_hh.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Total Allocated</span>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-        '</div><hr>' +
+        '</div><hr style="border-top:1px solid #eee; margin:10px 0;">' +
         '<div class="fb-grid-4">' +
           '<div><span class="fb-label">Savings (5%)</span><span class="fb-value fb-highlight">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
           '<div><span class="fb-label">Food Portion (1st)</span><span class="fb-value">LKR ' + calcs.first_food_portion.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
