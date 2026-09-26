@@ -1151,7 +1151,6 @@ function fbValidateAndCalculateBulk(workbook) {
     payload.house_no = houseNo;
     payload.year = window.fbState.activeYear;
     payload.month = window.fbState.activeMonth;
-    payload.updated_by = sessionStorage.getItem('username');
     payload.food_balance = calcs.food_balance;
     payload.clothing_balance = calcs.clothing_balance;
     payload.household_balance = calcs.household_balance;
