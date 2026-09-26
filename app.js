@@ -1887,8 +1887,11 @@ function generateExcelReport(username, month) {
     });
     
     var cat1Allowances = {};
+    var prof = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
+    var userHouse = prof.house || 'ALL';
+    var userVillage = prof.village || 'ALL';
     (state.categories || []).forEach(function(c) {
-      var allowAmt = Number(state.allowances[username + '_' + month + '_' + c.id]) || 0;
+      var allowAmt = allowance(c.id, month, userHouse, userVillage) || 0;
       cat1Allowances[c.name] = allowAmt;
     });
     cat1Allowances["Uncategorised"] = 0;
@@ -1926,7 +1929,10 @@ function generateExcelReport(username, month) {
         var bal = al - ex;
         var matchedCat = categories.find(function(c) { return c.name === k; });
         if (matchedCat) {
-            var fbBal = getFbBalance(matchedCat.id, currentMonth(start));
+            var prof2 = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
+            var uh = prof2.house || 'ALL';
+            var uv = prof2.village || 'ALL';
+            var fbBal = getFbBalance(matchedCat.id, month, uh, uv);
             if (fbBal !== 0) bal = fbBal; // Override simple math with official DB carry-over balance
         }
         totalAl += al; totalEx += ex;
