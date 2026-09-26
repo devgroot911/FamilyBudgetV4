@@ -2045,10 +2045,8 @@ window.sendNotification = function(targetVillage, message, targetUser) {
     triggered_by: sessionStorage.getItem('username') || 'System'
   };
   supabase.from('notifications').insert([payload]).then(function(res) {
-    // If it's for myself, reload notifications
-    if (payload.target_village === 'ALL' || payload.target_village === sessionStorage.getItem('village')) {
-       fetchNotifications();
-    }
+    // Always reload notifications so the sender sees their own action instantly
+    fetchNotifications();
   });
 };
 
