@@ -1,27 +1,29 @@
 // FB Calculator Module (Vanilla JS - Strict ES5/ES6 Promise chains, NO async/await, NO ?., NO ??)
-// Strictly additive, no modification to existing app.js internals.
 
+var today = new Date();
 window.fbState = {
   projects: [],
   myProjects: [],
   activeProject: null,
-  activeYear: 2025,
-  activeMonth: 1,
+  activeYear: today.getFullYear(),
+  activeMonth: today.getMonth() + 1,
   houses: [],
   childCounts: [],
   rateVariables: [],
   monthlySummary: null,
   currentSubView: 'projects',
-  loading: false
+  loading: false,
+  editingHouseId: null
 };
 
+// Updated DEFAULT_RATES to perfectly match the SOS Children's Village Piliyandala Excel Sheet
 var DEFAULT_RATES = {
-  food_o12_rate: 15000,
-  food_u12_rate: 10000,
+  food_o12_rate: 6300,
+  food_u12_rate: 4500,
   clothing_o12_rate: 2500,
-  clothing_u12_rate: 2000,
-  household_rate: 5000,
-  mother_food_rate: 18000,
+  clothing_u12_rate: 2100,
+  household_rate: 1500,
+  mother_food_rate: 6300,
   first_pct: 61.6667,
   second_pct: 33.3333,
   savings_pct: 5.0000
@@ -95,6 +97,42 @@ function logAudit(action, projectId, details) {
     details_json: details
   });
 }
+
+window.fbChangePeriod = function() {
+  window.fbState.activeMonth = parseInt(document.getElementById('fb-sel-month').value);
+  window.fbState.activeYear = parseInt(document.getElementById('fb-sel-year').value);
+  loadProjectData();
+};
+
+function fbGetMotherName(pName, houseNo) {
+  var currentMotherName = 'Unassigned';
+  if (window.state && window.state.profiles) {
+    Object.keys(window.state.profiles).forEach(function(uname) {
+      var prof = window.state.profiles[uname];
+      if (prof.village && prof.village.toLowerCase() === pName.toLowerCase() && String(prof.house) === String(houseNo)) {
+        var isMother = (prof.role && prof.role.toLowerCase() === 'mother') || (prof.usertype && prof.usertype.toLowerCase().indexOf('mother') !== -1);
+        if (isMother) currentMotherName = prof.name;
+      }
+    });
+  }
+  return currentMotherName;
+}
+
+window.fbParseMath = function(val) {
+  if (!val) return 0;
+  var str = String(val).trim();
+  if (str.indexOf('=') === 0) str = str.substring(1);
+  str = str.replace(/[^0-9+\-*/().]/g, '');
+  if (!str) return 0;
+  try { return Function('"use strict";return (' + str + ')')() || 0; }
+  catch (e) { return 0; }
+};
+
+window.fbExcelInput = function(elem, houseId, field) {
+  var num = window.fbParseMath(elem.value);
+  elem.value = num; // update UI cleanly
+  window.fbUpdateCount(houseId, field, num);
+};
 
 function loadFbData() {
   window.fbState.loading = true;
@@ -222,11 +260,27 @@ window.renderFbCalculator = function() {
     return;
   }
   
+  var m = window.fbState.activeMonth;
+  var y = window.fbState.activeYear;
+  
+  var monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(function(x) { 
+    return '<option value="'+x+'" '+(x===m?'selected':'')+'>Month '+x+'</option>'; 
+  }).join('');
+  
   var container = document.querySelector('#view-fb-calculator');
   container.innerHTML = 
     '<div class="fb-layout">' +
       '<div class="fb-sidebar panel">' +
         '<h3 style="margin-top:0">FB Calculator</h3>' +
+        '<div style="margin-bottom:15px; display:flex; flex-direction:column; gap:8px;">' +
+          '<label style="font-size:11px; font-weight:bold; color:#666;">SELECT PERIOD</label>' +
+          '<select id="fb-sel-month" onchange="fbChangePeriod()" class="form-control">' + monthOptions + '</select>' +
+          '<select id="fb-sel-year" onchange="fbChangePeriod()" class="form-control">' +
+            '<option value="2024" '+(y===2024?'selected':'')+'>2024</option>' +
+            '<option value="2025" '+(y===2025?'selected':'')+'>2025</option>' +
+            '<option value="2026" '+(y===2026?'selected':'')+'>2026</option>' +
+          '</select>' +
+        '</div><hr>' +
         '<button class="ghost-button fb-nav-btn" data-subview="projects">Projects</button>' +
         '<button class="ghost-button fb-nav-btn" data-subview="dashboard" id="fb-nav-dashboard" style="display:none">Dashboard</button>' +
         '<button class="ghost-button fb-nav-btn" data-subview="rates" id="fb-nav-rates" style="display:none">Rate Variables</button>' +
@@ -300,7 +354,8 @@ function fbRenderProjects(container) {
 
 window.fbSelectProject = function(id) {
   window.fbState.activeProject = window.fbState.myProjects.find(function(p) { return p.id === id; });
-  window.fbState.currentSubView = 'dashboard';
+  window.fbState.editingHouseId = null; 
+  window.fbState.currentSubView = 'entry';
   loadProjectData();
 };
 
@@ -351,7 +406,7 @@ function fbRenderRates(container) {
   
   var html = 
     '<div class="panel">' +
-      '<div class="section-heading"><div><h2>Rate Variables</h2><small>For ' + window.fbState.activeYear + '/' + window.fbState.activeMonth + '</small></div></div>' +
+      '<div class="section-heading"><div><h2>Rate Variables</h2><small>Rates matched exactly to SOS Village parameters</small></div></div>' +
       '<div class="table-wrap">' +
         '<table>' +
           '<thead><tr><th>Variable</th><th>Value</th></tr></thead>' +
@@ -361,7 +416,7 @@ function fbRenderRates(container) {
               var disabled = (isPct && !isDirectorOrAdmin) ? 'disabled title="Only Finance Director can edit percentages"' : '';
               return '<tr>' +
                 '<td><strong>' + k + '</strong></td>' +
-                '<td><input type="number" step="0.0001" value="' + getRate(k) + '" id="rate_' + k + '" class="fb-rate-input" ' + disabled + ' /></td>' +
+                '<td><input type="number" step="0.0001" value="' + getRate(k) + '" id="rate_' + k + '" class="fb-rate-input form-control" ' + disabled + ' /></td>' +
               '</tr>';
             }).join('') +
           '</tbody>' +
@@ -400,113 +455,149 @@ window.fbSaveRates = function() {
   });
 };
 
+window.fbEditHouseForm = function(hId) {
+  window.fbState.editingHouseId = hId;
+  fbRenderSubView();
+};
+
 function fbRenderEntry(container) {
   var p = window.fbState.activeProject;
   if (!p) return;
-  
   var pName = p.name;
+  var hId = window.fbState.editingHouseId || '';
   
   var html = 
     '<div class="panel" style="margin-bottom: 20px;">' +
       '<div class="section-heading" style="display:flex; justify-content:space-between; align-items:center;">' +
-        '<div><h2>Data Entry</h2><small>House assignments are strictly linked to the Manage Users table</small></div>' +
+        '<div><h2>Data Entry</h2><small>Select Project & House to enter data</small></div>' +
         '<div style="display:flex; gap:10px;">' +
-          '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Template</button>' +
-          '<label class="primary-button" style="cursor:pointer; margin:0; display:flex; align-items:center; padding: 6px 12px;">&#11014; Upload Excel<input type="file" id="fb-excel-upload" accept=".xlsx, .xls" style="display:none" onchange="fbHandleExcelUpload(event)"></label>' +
+          '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Summary</button>' +
         '</div>' +
       '</div>' +
-    '</div>' +
-    '<div class="panel" style="overflow-x:auto;">' +
-      '<div class="table-wrap">' +
-        '<table class="data-table" style="min-width: 1200px; font-size: 13px;">' +
-          '<thead>' +
-            '<tr style="background:#f8f9fa;">' +
-              '<th>House No</th>' +
-              '<th>Assigned Mother</th>' +
-              '<th style="text-align:center" colspan="2">Food</th>' +
-              '<th style="text-align:center" colspan="2">Clothing</th>' +
-              '<th style="text-align:center">HH</th>' +
-              '<th style="text-align:center">Mother</th>' +
-              '<th>Aunt Amt</th>' +
-              '<th>Adjustments</th>' +
-              '<th style="background:#e8f4f8">Total Budget</th>' +
-              '<th style="background:#e8f4f8">Net Payable</th>' +
-            '</tr>' +
-            '<tr style="font-size: 11px; color:#666; background:#f8f9fa;">' +
-              '<th></th><th></th><th>Over 12</th><th>Under 12</th><th>Over 12</th><th>Under 12</th><th>Count</th><th>Count</th><th>LKR</th><th>LKR</th><th style="background:#e8f4f8">Calc</th><th style="background:#e8f4f8">Calc</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tbody>';
+      
+      '<div class="grid two-col" style="gap:15px; margin-bottom:15px; background:#f4f9fb; padding:15px; border-radius:5px; border:1px solid #cce5f0;">' +
+        '<div><label style="font-weight:bold;">1. Project / Village:</label>' +
+        '<select onchange="fbSelectProject(this.value)" class="form-control" style="width:100%;">';
+        
+  html += '<option value="">-- Select Project --</option>';
+  window.fbState.myProjects.forEach(function(proj) {
+     var sel = p.id === proj.id ? 'selected' : '';
+     html += '<option value="' + proj.id + '" ' + sel + '>' + proj.name + '</option>';
+  });
+  html += '</select></div>';
   
-  window.fbState.houses.forEach(function(h) {
+  html += '<div><label style="font-weight:bold;">2. House Number / Mother Name:</label>' +
+      '<select onchange="fbEditHouseForm(this.value)" class="form-control" style="width:100%;">';
+  html += '<option value="">-- Select House --</option>';
+  
+  var sortedHouses = window.fbState.houses.slice().sort(function(a,b) { return parseInt(a.house_no) - parseInt(b.house_no); });
+  sortedHouses.forEach(function(h) {
+     var mName = fbGetMotherName(p.name, h.house_no);
+     var sel = hId === h.id ? 'selected' : '';
+     html += '<option value="' + h.id + '" ' + sel + '>House ' + h.house_no + ' (' + mName + ')</option>';
+  });
+  html += '</select></div>';
+  html += '</div></div>'; // end panel
+  
+  if (hId) {
+    var house = window.fbState.houses.find(function(h) { return h.id === hId; });
+    var counts = window.fbState.childCounts.find(function(c) { return c.house_id === hId; }) || {};
+    var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
+    var motherName = fbGetMotherName(pName, house.house_no);
+    
+    html += '<div class="panel" style="margin-bottom:20px; border-left:4px solid #1abc9c;">' +
+      '<h3 style="margin-top:0">Entering Data For: <span style="color:#1abc9c">House ' + house.house_no + ' (' + motherName + ')</span></h3>' +
+      '<hr>' +
+      '<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom:20px;">' +
+      
+      '<div><label>Food >12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.food_o12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_o12\', this.value)" style="width:100%"></div>' +
+      '<div><label>Food <12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.food_u12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_u12\', this.value)" style="width:100%"></div>' +
+      '<div><label>Mother Count</label><input type="number" min="0" class="form-control" value="' + (counts.mother_count||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'mother_count\', this.value)" style="width:100%"></div>' +
+      
+      '<div><label>Clothing >12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.clothing_o12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'clothing_o12\', this.value)" style="width:100%"></div>' +
+      '<div><label>Clothing <12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.clothing_u12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'clothing_u12\', this.value)" style="width:100%"></div>' +
+      '<div><label>House Hold Count</label><input type="number" min="0" class="form-control" value="' + (counts.household||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'household\', this.value)" style="width:100%"></div>' +
+      
+      '</div>' + 
+      '<div class="grid two-col" style="gap:15px; padding:15px; background:#f9f9f9; border-radius:5px;">' +
+      
+      '<div><label>Aunts Allowance (LKR)<br><small style="color:#666">Inside calculations supported (e.g. <b>=500+250</b>)</small></label>' +
+      '<input type="text" class="form-control" value="' + (counts.aunt_amount||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'aunt_amount\')" placeholder="=500+200" style="width:100%; border-color:#1abc9c"></div>' +
+      
+      '<div><label>Adjustments / Festival (LKR)<br><small style="color:#666">Inside calculations supported (e.g. <b>=1500+500</b>)</small></label>' +
+      '<input type="text" class="form-control" value="' + (counts.adjustment||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'adjustment\')" placeholder="=1500+500" style="width:100%; border-color:#1abc9c"></div>' +
+      
+      '</div>' + 
+      
+      '<div style="margin-top:20px; padding:15px; background:#e8f4f8; border-radius:5px; border-left:4px solid #3498db;">' +
+        '<h4 style="margin-top:0">Live Budget Calculation</h4>' +
+        '<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">' +
+          '<div><small>Food Budget:</small><br><strong>LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+          '<div><small>Total Budget:</small><br><strong>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+          '<div><small>Net Payable:</small><br><strong style="color:#1F5C3A">LKR ' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+          '<div><small>Savings:</small><br><strong>LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  } else {
+    html += '<div class="panel" style="text-align:center; padding:40px; color:#888;"><h3>Please select a House / Mother above to enter data.</h3></div>';
+  }
+  
+  html += '<div class="panel" style="overflow-x:auto;">' +
+    '<h3>Summary Overview</h3>' +
+    '<table class="data-table" style="min-width: 1000px; font-size: 13px;">' +
+      '<thead>' +
+        '<tr style="background:#f8f9fa;">' +
+          '<th>House No</th>' +
+          '<th>Assigned Mother</th>' +
+          '<th style="text-align:center" colspan="2">Food</th>' +
+          '<th style="text-align:center" colspan="2">Clothing</th>' +
+          '<th style="text-align:center">HH</th>' +
+          '<th style="text-align:center">Mother</th>' +
+          '<th>Aunt Amt</th>' +
+          '<th>Adjustments</th>' +
+          '<th style="background:#e8f4f8">Total Budget</th>' +
+          '<th style="background:#e8f4f8">Net Payable</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>';
+      
+  sortedHouses.forEach(function(h) {
     var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
-    
-    var currentMotherName = 'Unassigned';
-    var currentMotherUsername = '';
-    
-    if (window.state && window.state.profiles) {
-      Object.keys(window.state.profiles).forEach(function(uname) {
-        var prof = window.state.profiles[uname];
-        if (prof.village && prof.village.toLowerCase() === pName.toLowerCase() && String(prof.house) === String(h.house_no)) {
-          var isMother = (prof.role && prof.role.toLowerCase() === 'mother') || (prof.usertype && prof.usertype.toLowerCase().indexOf('mother') !== -1);
-          if (isMother) {
-            currentMotherName = prof.name;
-            currentMotherUsername = uname;
-          }
-        }
-      });
-    }
+    var cMotherName = fbGetMotherName(pName, h.house_no);
+    var isSel = (hId === h.id) ? 'background:#eafaf1; font-weight:bold;' : '';
     
     html += 
-      '<tr>' +
+      '<tr style="'+isSel+' cursor:pointer;" onclick="fbEditHouseForm(\''+h.id+'\')">' +
         '<td><strong>' + h.house_no + '</strong></td>' +
-        '<td>' + currentMotherName + '<br><small style="color:#888">' + (currentMotherUsername ? '(' + currentMotherUsername + ')' : 'Edit in Manage Users') + '</small></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_o12\', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_u12\', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_o12\', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_u12\', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.household || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'household\', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'mother_count\', this.value)" /></td>' +
-        '<td><input type="number" min="0" step="100" style="width:70px; padding:4px;" value="' + (counts.aunt_amount || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'aunt_amount\', this.value)" /></td>' +
-        '<td><input type="number" step="100" style="width:70px; padding:4px;" value="' + (counts.adjustment || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'adjustment\', this.value)" placeholder="Adj." title="Adjustments/Arrears/Festival" /></td>' +
-        '<td style="background:#f4f9fb; font-weight:bold;">' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
-        '<td style="background:#f4f9fb; font-weight:bold; color:#1F5C3A">' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
+        '<td>' + cMotherName + '</td>' +
+        '<td>' + (counts.food_o12 || 0) + '</td>' +
+        '<td>' + (counts.food_u12 || 0) + '</td>' +
+        '<td>' + (counts.clothing_o12 || 0) + '</td>' +
+        '<td>' + (counts.clothing_u12 || 0) + '</td>' +
+        '<td>' + (counts.household || 0) + '</td>' +
+        '<td>' + (counts.mother_count || 0) + '</td>' +
+        '<td>' + (counts.aunt_amount || 0) + '</td>' +
+        '<td>' + (counts.adjustment || 0) + '</td>' +
+        '<td style="background:#f4f9fb; font-weight:bold;">' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="background:#f4f9fb; font-weight:bold; color:#1F5C3A">' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
       '</tr>';
   });
   
-  html += 
-          '</tbody>' +
-        '</table>' +
-      '</div>' +
-    '</div>';
+  html += '</tbody></table></div>';
   container.innerHTML = html;
 }
 
 window.fbDownloadTemplate = function() {
   if (!window.XLSX) return alert('Excel library not loaded.');
-  var ws_data = [
-    ['House No', 'Mother', 'Food >12', 'Food <12', 'Clothing >12', 'Clothing <12', 'HH Count', 'Mother Count', 'Aunt Amt', 'Adjustments']
-  ];
-  
+  var ws_data = [['House No', 'Mother', 'Food >12', 'Food <12', 'Clothing >12', 'Clothing <12', 'HH Count', 'Mother Count', 'Aunt Amt', 'Adjustments']];
   var pName = window.fbState.activeProject.name;
   
   window.fbState.houses.forEach(function(h) {
     var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
-    
-    var currentMotherName = 'Unassigned';
-    if (window.state && window.state.profiles) {
-      Object.keys(window.state.profiles).forEach(function(uname) {
-        var prof = window.state.profiles[uname];
-        if (prof.village && prof.village.toLowerCase() === pName.toLowerCase() && String(prof.house) === String(h.house_no)) {
-          var isMother = (prof.role && prof.role.toLowerCase() === 'mother') || (prof.usertype && prof.usertype.toLowerCase().indexOf('mother') !== -1);
-          if (isMother) currentMotherName = prof.name;
-        }
-      });
-    }
-    
     ws_data.push([
-      h.house_no, currentMotherName, 
+      h.house_no, fbGetMotherName(pName, h.house_no), 
       counts.food_o12 || 0, counts.food_u12 || 0,
       counts.clothing_o12 || 0, counts.clothing_u12 || 0,
       counts.household || 0, counts.mother_count || 0,
@@ -517,55 +608,7 @@ window.fbDownloadTemplate = function() {
   var ws = XLSX.utils.aoa_to_sheet(ws_data);
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Data Entry");
-  XLSX.writeFile(wb, window.fbState.activeProject.name + "_Template_" + window.fbState.activeYear + "_" + window.fbState.activeMonth + ".xlsx");
-};
-
-window.fbHandleExcelUpload = function(event) {
-  var file = event.target.files[0];
-  if (!file || !window.XLSX) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var data = new Uint8Array(e.target.result);
-    var workbook = XLSX.read(data, {type: 'array'});
-    var sheet = workbook.Sheets[workbook.SheetNames[0]];
-    var json = XLSX.utils.sheet_to_json(sheet, {header: 1});
-    
-    var updates = [];
-    var pid = window.fbState.activeProject.id;
-    var y = window.fbState.activeYear;
-    var m = window.fbState.activeMonth;
-    
-    for (var i = 1; i < json.length; i++) {
-      var row = json[i];
-      if (!row || row.length < 1) continue;
-      var houseNo = String(row[0]);
-      var house = window.fbState.houses.find(function(h) { return String(h.house_no) === houseNo; });
-      if (house) {
-        updates.push({
-          project_id: pid, year: y, month: m, house_id: house.id,
-          food_o12: Number(row[2]) || 0, food_u12: Number(row[3]) || 0,
-          clothing_o12: Number(row[4]) || 0, clothing_u12: Number(row[5]) || 0,
-          household: Number(row[6]) || 0, mother_count: Number(row[7]) || 0,
-          aunt_amount: Number(row[8]) || 0, adjustment: Number(row[9]) || 0
-        });
-      }
-    }
-    
-    if (updates.length > 0) {
-      window.fbState.loading = true;
-      fbRenderSubView();
-      supabase.from('fb_child_counts').upsert(updates, { onConflict: 'project_id, year, month, house_id' }).then(function(res) {
-        if (res.error) throw res.error;
-        alert('Imported ' + updates.length + ' rows successfully!');
-        loadProjectData();
-      }).catch(function(err) {
-        window.fbState.loading = false;
-        fbRenderSubView();
-        alert('Upload failed: ' + err.message);
-      });
-    }
-  };
-  reader.readAsArrayBuffer(file);
+  XLSX.writeFile(wb, window.fbState.activeProject.name + "_Summary_" + window.fbState.activeYear + "_" + window.fbState.activeMonth + ".xlsx");
 };
 
 window.fbUpdateCount = function(houseId, field, val) {
