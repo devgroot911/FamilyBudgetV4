@@ -1901,6 +1901,9 @@ function generateExcelReport(username, month) {
     var cat2Totals = {};
     var zeroCount = 0;
     var itemGroups = {};
+    var totalWithdrawn = 0;
+    var totalEx = 0;
+    var balTotal = 0;
     
     list.forEach(function(e) {
       var c1Name = cat(e.category); c1Name = c1Name ? c1Name.name : "Uncategorised";
@@ -1950,7 +1953,9 @@ function generateExcelReport(username, month) {
       ws1Merges.push({s:{r: sr, c:5}, e:{r: sr, c:6}});
       ws1Rows.push({hpt: 16});
 
-      var totalAl = 0, totalEx = 0, totalWithdrawn = 0;
+      var totalAl = 0;
+      totalEx = 0;
+      totalWithdrawn = 0;
       summaryCatKeys.forEach(function(k) {
         var al = cat1Allowances[k] || 0;
         var ex = cat1Totals[k] || 0;
@@ -1981,7 +1986,7 @@ function generateExcelReport(username, month) {
         ws1Rows.push({hpt: 16});
       });
 
-      var balTotal = totalWithdrawn - totalEx;
+      balTotal = totalWithdrawn - totalEx;
       ws1Data.push([
         createCell("TOTAL", {font: reportTheme.fonts.smallB, alignment: {horizontal: "right"}}), null,
         createCell(totalAl, {font: reportTheme.fonts.smallB, alignment: {horizontal: "right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency),
@@ -2178,13 +2183,13 @@ function generateExcelReport(username, month) {
           ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:3}});
           ws2Rows.push({hpt: 16});
        };
-       if (fbRow.calcs.food_balance !== undefined) addRow("Food End Balance (incl. savings)", fbRow.calcs.food_balance, true, false);
-       if (fbRow.calcs.clothing_balance !== undefined) addRow("Clothing End Balance", fbRow.calcs.clothing_balance, true, false);
-       if (fbRow.calcs.household_balance !== undefined) addRow("Household End Balance", fbRow.calcs.household_balance, true, false);
-       if (fbRow.calcs.savings !== undefined) addRow("Savings", fbRow.calcs.savings, true, false);
-       if (fbRow.calcs.interest_balance !== undefined) addRow("Interest Balance", fbRow.calcs.interest_balance, true, false);
-       if (fbRow.calcs.interest_earned !== undefined) addRow("Interest Earned", fbRow.calcs.interest_earned, true, false);
-       if (fbRow.calcs.bank_charges !== undefined) addRow("Bank Charges (Arrears)", fbRow.calcs.bank_charges, true, false);
+       if (fbRow.calcs.food_balance != null) addRow("Food End Balance (incl. savings)", fbRow.calcs.food_balance, true, false);
+       if (fbRow.calcs.clothing_balance != null) addRow("Clothing End Balance", fbRow.calcs.clothing_balance, true, false);
+       if (fbRow.calcs.household_balance != null) addRow("Household End Balance", fbRow.calcs.household_balance, true, false);
+       if (fbRow.calcs.savings != null) addRow("Savings", fbRow.calcs.savings, true, false);
+       if (fbRow.calcs.interest_balance != null) addRow("Interest Balance", fbRow.calcs.interest_balance, true, false);
+       if (fbRow.calcs.interest_earned != null) addRow("Interest Earned", fbRow.calcs.interest_earned, true, false);
+       if (fbRow.calcs.bank_charges != null) addRow("Bank Charges (Arrears)", fbRow.calcs.bank_charges, true, false);
        
        ws2Data.push([]); ws2Rows.push({hpt: 18});
     }
