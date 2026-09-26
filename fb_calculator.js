@@ -587,22 +587,20 @@ window.fbReviewAndSave = function(houseNo) {
                 
      overdrafts.forEach(function(od) {
         // Smart Dropdowns: Disable options if covering field doesn't have enough funds!
-        var foodDisabled = calcs.food_balance < od.amount ? 'disabled' : '';
         var foodLabel = calcs.food_balance < od.amount 
-            ? 'Cover from Food (Insufficient: ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')' 
+            ? 'Cover from Food (Warning: Insufficient, ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ' avail)' 
             : 'Cover from Food (Avail: ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
             
-        var intDisabled = calcs.interest_balance < od.amount ? 'disabled' : '';
         var intLabel = calcs.interest_balance < od.amount 
-            ? 'Cover from Interest (Insufficient: ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')' 
+            ? 'Cover from Interest (Warning: Insufficient, ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ' avail)' 
             : 'Cover from Interest (Avail: ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
             
         html += '<div class="fb-box" style="margin-bottom:10px;">' +
                 '<label class="fb-label">' + od.label + ' Overdraft: LKR ' + od.amount.toLocaleString(undefined, {minimumFractionDigits:2}) + '</label>' +
                 '<select id="od_resolve_' + od.field + '" class="form-control">' +
                    '<option value="none">Keep Negative Balance (Carry Forward)</option>' +
-                   '<option value="food_balance" ' + foodDisabled + '>' + foodLabel + '</option>' +
-                   '<option value="interest_balance" ' + intDisabled + '>' + intLabel + '</option>' +
+                   '<option value="food_balance">' + foodLabel + '</option>' +
+                   '<option value="interest_balance">' + intLabel + '</option>' +
                 '</select></div>';
      });
      html += '</div><div class="fb-modal-footer">' +
@@ -637,12 +635,18 @@ window.fbApplyOverdrafts = function(houseNo) {
       }
    });
    
-   // Double check for multiple-field double-dipping
+   var warnings = [];
    if (foodDeduction > calcs.food_balance) {
-      return alert("Cannot apply transfers! Food Balance does not have enough funds to cover all requested deductions. Please select 'Keep Negative' for one of the fields.");
+      warnings.push("The requested transfers will push the Food Balance into the negative.");
    }
    if (intDeduction > calcs.interest_balance) {
-       return alert("Cannot apply transfers! Interest Balance does not have enough funds to cover all requested deductions. Please select 'Keep Negative' for one of the fields.");
+       warnings.push("The requested transfers will push the Interest Balance into the negative.");
+   }
+   
+   if (warnings.length > 0) {
+      if (!confirm(warnings.join("\n") + "\n\nDo you want to proceed and carry these negative balances forward?")) {
+         return;
+      }
    }
    
    fbShowReviewModal(houseNo, transfers);
