@@ -257,7 +257,6 @@ function fbRenderProjects(container) {
   } else {
     html += '<div class="grid two-col">';
     window.fbState.myProjects.forEach(function(p) {
-      // NOTE: Using properly escaped quotes for the onclick attribute
       html += 
         '<div class="panel" style="cursor:pointer; border:1px solid #ddd" onclick="fbSelectProject(\'' + p.id + '\')">' +
           '<h3>' + p.name + '</h3>' +
@@ -367,7 +366,6 @@ window.fbSaveRates = function() {
   });
 };
 
-
 function fbRenderEntry(container) {
   var p = window.fbState.activeProject;
   if (!p) return;
@@ -377,8 +375,8 @@ function fbRenderEntry(container) {
       '<div class="section-heading" style="display:flex; justify-content:space-between; align-items:center;">' +
         '<div><h2>Data Entry</h2><small>Enter monthly allocations or import from Excel</small></div>' +
         '<div style="display:flex; gap:10px;">' +
-          '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Template</button>' +
-          '<label class="primary-button" style="cursor:pointer; margin:0; display:flex; align-items:center;">&#11014; Upload Excel<input type="file" id="fb-excel-upload" accept=".xlsx, .xls" style="display:none" onchange="fbHandleExcelUpload(event)"></label>' +
+          '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Download Excel Template</button>' +
+          '<label class="primary-button" style="cursor:pointer; margin:0; display:flex; align-items:center; padding: 6px 12px;">&#11014; Upload Excel<input type="file" id="fb-excel-upload" accept=".xlsx, .xls" style="display:none" onchange="fbHandleExcelUpload(event)"></label>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -413,14 +411,14 @@ function fbRenderEntry(container) {
       '<tr>' +
         '<td><strong>' + h.house_no + '</strong></td>' +
         '<td>' + motherName + '</td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'food_o12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'food_u12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'clothing_o12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'clothing_u12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.household || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'household', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'mother_count', this.value)" /></td>' +
-        '<td><input type="number" min="0" step="100" style="width:70px; padding:4px;" value="' + (counts.aunt_amount || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'aunt_amount', this.value)" /></td>' +
-        '<td><input type="number" step="100" style="width:70px; padding:4px;" value="' + (counts.adjustment || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'adjustment', this.value)" placeholder="Adj." title="Adjustments/Arrears/Festival" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_o12\', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_u12\', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_o12\', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_u12\', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.household || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'household\', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'mother_count\', this.value)" /></td>' +
+        '<td><input type="number" min="0" step="100" style="width:70px; padding:4px;" value="' + (counts.aunt_amount || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'aunt_amount\', this.value)" /></td>' +
+        '<td><input type="number" step="100" style="width:70px; padding:4px;" value="' + (counts.adjustment || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'adjustment\', this.value)" placeholder="Adj." title="Adjustments/Arrears/Festival" /></td>' +
         '<td style="background:#f4f9fb; font-weight:bold;">' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
         '<td style="background:#f4f9fb; font-weight:bold; color:#1F5C3A">' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
       '</tr>';
@@ -453,15 +451,6 @@ window.fbDownloadTemplate = function() {
   });
   
   var ws = XLSX.utils.aoa_to_sheet(ws_data);
-  
-  // Basic styling for header
-  var range = XLSX.utils.decode_range(ws['!ref']);
-  for(var C = range.s.c; C <= range.e.c; ++C) {
-    var addr = XLSX.utils.encode_cell({r:0, c:C});
-    if(!ws[addr]) continue;
-    ws[addr].s = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "4A90E2" } } };
-  }
-  
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Data Entry");
   XLSX.writeFile(wb, window.fbState.activeProject.name + "_Template_" + window.fbState.activeYear + "_" + window.fbState.activeMonth + ".xlsx");
@@ -477,7 +466,6 @@ window.fbHandleExcelUpload = function(event) {
     var sheet = workbook.Sheets[workbook.SheetNames[0]];
     var json = XLSX.utils.sheet_to_json(sheet, {header: 1});
     
-    // Skip header row [0]
     var updates = [];
     var pid = window.fbState.activeProject.id;
     var y = window.fbState.activeYear;
@@ -505,7 +493,7 @@ window.fbHandleExcelUpload = function(event) {
       supabase.from('fb_child_counts').upsert(updates, { onConflict: 'project_id, year, month, house_id' }).then(function(res) {
         if (res.error) throw res.error;
         alert('Imported ' + updates.length + ' rows successfully!');
-        loadProjectData(); // refresh full state
+        loadProjectData();
       }).catch(function(err) {
         window.fbState.loading = false;
         fbRenderSubView();
