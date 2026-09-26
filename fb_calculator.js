@@ -29,8 +29,8 @@ var DEFAULT_RATES = {
 
 var style = document.createElement('style');
 style.innerHTML = 
-  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:999999; padding:40px 15px; box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; }' +
-  '.fb-modal-content { margin:0 auto; background:#fff; width:100%; max-width:700px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
+  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:999999; padding:0 15px; box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; }' +
+  '.fb-modal-content { margin:40px auto; background:#fff; width:100%; max-width:700px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
   '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; border-radius:8px 8px 0 0; }' +
   '.fb-modal-body { padding:20px; font-size:13px; line-height:1.4; color:#444; }' +
   '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:15px 20px; text-align:right; border-radius:0 0 8px 8px; }' +
@@ -696,13 +696,13 @@ window.fbReviewAndSave = function(houseNo) {
                 '<p style="margin-top:0;">Your requested actual withdrawals exceed the available monthly allocation and the previous rollover balance.</p>' +
                 
                 '<div class="fb-box" style="margin-bottom:15px; background:#fdf2e9;"><h4>Entered Data Breakdown</h4>' +
-                  '<div class="fb-grid-4" style="font-size:12px;">' +
+                  '<div class="fb-grid-2" style="font-size:12px;">' +
                      '<div><span class="fb-label">Prev Cloth Bal</span>LKR ' + prev.clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
                      '<div><span class="fb-label">Clothing Alloc</span>LKR ' + calcs.total_clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
                      '<div><span class="fb-label">Actual Clothing</span><span style="color:#d35400;">LKR ' + calcs.actual_clothing_w.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
                      '<div><span class="fb-label">Resulting Bal</span><strong class="'+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
                      
-                     '<div style="grid-column: span 4;"><hr style="border-top:1px solid #eee; margin:5px 0;"></div>' +
+                     '<div style="grid-column: span 2;"><hr style="border-top:1px solid #eee; margin:5px 0;"></div>' +
                      
                      '<div><span class="fb-label">Prev HH Bal</span>LKR ' + prev.household.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
                      '<div><span class="fb-label">HH Alloc</span>LKR ' + calcs.total_hh.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
@@ -813,40 +813,40 @@ window.fbShowReviewModal = function(houseNo, transfers) {
       '</div>' +
       
       '<div class="fb-box" style="margin-bottom:15px; background:#f4f9f9; border-left:3px solid #16a085;"><h4>1. User Input Summary</h4>' +
-        '<div class="fb-grid-4" style="font-size:12px; color:#333;">' +
+        '<div class="fb-grid-2" style="font-size:12px; color:#333;">' +
           '<div><span class="fb-label">Children >12</span>' + (existing.food_o12||0) + '</div>' +
           '<div><span class="fb-label">Children <12</span>' + (existing.food_u12||0) + '</div>' +
           '<div><span class="fb-label">Mothers</span>' + (existing.mother_count||0) + '</div>' +
           '<div><span class="fb-label">Aunt Amount</span>LKR ' + Number(existing.aunt_amount||0).toLocaleString() + '</div>' +
           
-          '<div style="grid-column: span 4;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
+          '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
           
           '<div><span class="fb-label">Actual Clothing</span>LKR ' + calcs.actual_clothing_w.toLocaleString() + '</div>' +
           '<div><span class="fb-label">Actual Household</span>LKR ' + calcs.actual_household_w.toLocaleString() + '</div>' +
           '<div><span class="fb-label">Interest Received</span>LKR ' + calcs.interest_earned.toLocaleString() + '</div>' +
           '<div><span class="fb-label">Bank Charges</span>LKR ' + calcs.bank_charges.toLocaleString() + '</div>' +
           
-          '<div style="grid-column: span 4;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
+          '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
           
           '<div><span class="fb-label">Adjustments</span>LKR ' + Number(existing.adjustment||0).toLocaleString() + '</div>' +
         '</div>' +
       '</div>' +
       
       '<div class="fb-box" style="margin-bottom:15px;"><h4>2. System Calculation & Withdrawals</h4>' +
-        '<div class="fb-grid-4" style="margin-bottom:10px; font-size:12px; color:#666;">' +
+        '<div class="fb-grid-2" style="margin-bottom:10px; font-size:12px; color:#666;">' +
           '<div><span class="fb-label">Prev Food</span>LKR ' + prev.food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Prev Cloth</span>LKR ' + prev.clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Prev HH</span>LKR ' + prev.household.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Prev Int</span>LKR ' + prev.interest.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           
-          '<div style="grid-column: span 4;"><hr style="border-top:1px solid #eee; margin:2px 0;"></div>' +
+          '<div style="grid-column: span 2;"><hr style="border-top:1px solid #eee; margin:2px 0;"></div>' +
           
           '<div><span class="fb-label">Food Alloc</span>LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Clothing Alloc</span>LKR ' + calcs.total_clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">HH Alloc</span>LKR ' + calcs.total_hh.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Total Allocated</span>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
         '</div><hr style="border-top:1px solid #eee; margin:10px 0;">' +
-        '<div class="fb-grid-4">' +
+        '<div class="fb-grid-2">' +
           '<div><span class="fb-label">Savings (5%)</span><span class="fb-value fb-highlight">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
           '<div><span class="fb-label">Food Portion (1st)</span><span class="fb-value">LKR ' + calcs.first_food_portion.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
           '<div><span class="fb-label">Total 1st W</span><span class="fb-value">LKR ' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
@@ -861,7 +861,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
       }
       
       html += '<div class="fb-box"><h4>3. Final Month-End Balances</h4>' +
-        '<div class="fb-grid-4">' +
+        '<div class="fb-grid-2">' +
           '<div><span class="fb-label">Food</span><span class="fb-value '+(calcs.food_balance<0?'fb-danger':'')+'">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
           '<div><span class="fb-label">Clothing</span><span class="fb-value '+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
           '<div><span class="fb-label">Household</span><span class="fb-value '+(calcs.household_balance<0?'fb-danger':'')+'">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
