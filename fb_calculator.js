@@ -146,6 +146,14 @@ function getPreviousBalances(houseNo, targetYear, targetMonth) {
 
 function calculateHouseBudget(houseCounts, rates, prevBalances) {
   if (!prevBalances) prevBalances = { food: 0, clothing: 0, household: 0, interest: 0 };
+  
+  var manualAdjustments = {
+      food: Number(houseCounts.manual_adj_food || 0),
+      clothing: Number(houseCounts.manual_adj_cloth || 0),
+      household: Number(houseCounts.manual_adj_hh || 0),
+      interest: Number(houseCounts.manual_adj_int || 0)
+  };
+  
   var getRate = function(key) {
     var found = rates.find(function(r) { return r.variable_key === key; });
     return (found && found.value !== undefined && found.value !== null) ? Number(found.value) : DEFAULT_RATES[key];
@@ -179,10 +187,10 @@ function calculateHouseBudget(houseCounts, rates, prevBalances) {
   var second_withdrawal = remaining_food * ((100 - getRate('first_pct')) / 100); 
   var first_withdrawal = actual_clothing_w + actual_household_w + first_food_portion;
   
-  var food_balance = prevBalances.food + savings + remaining_food - first_food_portion - second_withdrawal;
-  var clothing_balance = prevBalances.clothing + total_clothing - actual_clothing_w;
-  var household_balance = prevBalances.household + total_hh - actual_household_w;
-  var interest_balance = prevBalances.interest + interest_earned - bank_charges;
+  var food_balance = prevBalances.food + savings + remaining_food - first_food_portion - second_withdrawal + manualAdjustments.food;
+  var clothing_balance = prevBalances.clothing + total_clothing - actual_clothing_w + manualAdjustments.clothing;
+  var household_balance = prevBalances.household + total_hh - actual_household_w + manualAdjustments.household;
+  var interest_balance = prevBalances.interest + interest_earned - bank_charges + manualAdjustments.interest;
 
   return {
     child_total: child_total, total_food: total_food, total_clothing: total_clothing, total_hh: total_hh,
@@ -347,6 +355,12 @@ function loadVillageData() {
                    c.clothing_balance = r.ending.cloth || 0;
                    c.household_balance = r.ending.hh || 0;
                    c.interest_balance = r.ending.int || 0;
+               }
+               if (r.manual_adjustments) {
+                   c.manual_adj_food = r.manual_adjustments.food || 0;
+                   c.manual_adj_cloth = r.manual_adjustments.cloth || 0;
+                   c.manual_adj_hh = r.manual_adjustments.hh || 0;
+                   c.manual_adj_int = r.manual_adjustments.int || 0;
                }
            } catch(e) {}
        }
@@ -1498,9 +1512,19 @@ window.fbExecuteCrossHouseTransfer = function() {
   else {
      // If same house, just apply both math ops to one payload
      payloadSrc[dAcct] += amt; // Add the amount to the destination account (since it's the same payload)
+     var shortAcct = dAcct.replace('_balance', '').replace('clothing', 'cloth').replace('household', 'hh').replace('interest', 'int');
+     
      // Also update the remarks
      var r = JSON.parse(payloadSrc.remarks);
-     r.ending[dAcct.replace('_balance', '').replace('clothing', 'cloth').replace('household', 'hh').replace('interest', 'int')] += amt;
+     r.ending[shortAcct] += amt;
+     if (r.manual_adjustments) r.manual_adjustments[shortAcct] += amt;
+     
+     // Also update payload columns
+     if (dAcct === 'food_balance') payloadSrc.manual_adj_food += amt;
+     if (dAcct === 'clothing_balance') payloadSrc.manual_adj_cloth += amt;
+     if (dAcct === 'household_balance') payloadSrc.manual_adj_hh += amt;
+     if (dAcct === 'interest_balance') payloadSrc.manual_adj_int += amt;
+     
      // Add second transfer log
      r.transfers.push("Received LKR " + amt + " from House " + sHouse + " (" + sAcct.split('_')[0] + ")");
      payloadSrc.remarks = JSON.stringify(r);
@@ -1519,6 +1543,10 @@ window.fbExecuteCrossHouseTransfer = function() {
     delete clean.open_cloth;
     delete clean.open_hh;
     delete clean.open_int;
+    delete clean.manual_adj_food;
+    delete clean.manual_adj_cloth;
+    delete clean.manual_adj_hh;
+    delete clean.manual_adj_int;
   });
   
   fbAlert('Saving cross-house transfer...');
@@ -1569,6 +1597,23 @@ function _buildXhPayload(data, houseNo, adjustAcct, adjustAmt, logString) {
   var logs = data.existingTransfers.slice();
   logs.push(logString);
   
+  var mAdj = { food: 0, cloth: 0, hh: 0, int: 0 };
+  if (data.existingRow.remarks) {
+     try {
+       var r = JSON.parse(data.existingRow.remarks);
+       if (r.manual_adjustments) mAdj = r.manual_adjustments;
+     } catch(e) {}
+  }
+  if (adjustAcct === 'food_balance') mAdj.food += adjustAmt;
+  if (adjustAcct === 'clothing_balance') mAdj.cloth += adjustAmt;
+  if (adjustAcct === 'household_balance') mAdj.hh += adjustAmt;
+  if (adjustAcct === 'interest_balance') mAdj.int += adjustAmt;
+  
+  p.manual_adj_food = mAdj.food;
+  p.manual_adj_cloth = mAdj.cloth;
+  p.manual_adj_hh = mAdj.hh;
+  p.manual_adj_int = mAdj.int;
+  
   p.remarks = JSON.stringify({
       savings: data.calcs.savings,
       first_w: data.calcs.first_withdrawal,
@@ -1576,8 +1621,10 @@ function _buildXhPayload(data, houseNo, adjustAcct, adjustAmt, logString) {
       mother: motherName,
       transfers: logs,
       opening: data.openingObj,
-      ending: { food: f, cloth: c, hh: h, int: i }
+      ending: { food: f, cloth: c, hh: h, int: i },
+      manual_adjustments: mAdj
   });
   return p;
 }
 
+\n  delete payload.manual_adj_food;\n  delete payload.manual_adj_cloth;\n  delete payload.manual_adj_hh;\n  delete payload.manual_adj_int;\n    delete clean.manual_adj_food;\n    delete clean.manual_adj_cloth;\n    delete clean.manual_adj_hh;\n    delete clean.manual_adj_int;
