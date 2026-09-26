@@ -2007,24 +2007,52 @@ function renderNotificationBadge() {
   }
 }
 
+window.closeNotifModal = function() {
+  var m = document.getElementById('notif-modal');
+  if (m) document.body.removeChild(m);
+  window.markAllNotificationsRead();
+};
+
+window.markAllNotificationsRead = function() {
+  var unread = window.appState.notifications.filter(function(n) { return !n.is_read; });
+  if (unread.length === 0) return;
+  
+  unread.forEach(function(n) { n.is_read = true; });
+  renderNotificationBadge();
+  
+  var ids = unread.map(function(n) { return n.id; });
+  supabase.from('notifications').update({ is_read: true }).in('id', ids).then(function(){});
+  
+  var els = document.querySelectorAll('.notif-item');
+  els.forEach(function(el) {
+    el.style.background = '#f9f9f9';
+    el.style.borderLeft = '3px solid #ccc';
+  });
+};
+
 function showNotificationInbox() {
-  var html = '<div id="notif-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; justify-content:flex-end; padding-top:60px; padding-right:20px; box-sizing:border-box;">' +
-    '<div class="panel" style="width:350px; max-height:80vh; overflow-y:auto; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.2); animation: slideIn 0.2s ease-out;">' +
+  var html = '<div id="notif-modal" onclick="if(event.target.id === \'notif-modal\') closeNotifModal()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; justify-content:flex-end; padding-top:60px; padding-right:20px; box-sizing:border-box;">' +
+    '<div class="panel" style="width:350px; max-height:80vh; overflow-y:auto; padding:15px; box-shadow:0 10px 30px rgba(0,0,0,0.2); animation: slideIn 0.2s ease-out; display:flex; flex-direction:column;">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;">' +
         '<h3 style="margin:0;">Notifications</h3>' +
-        '<button class="icon-button" onclick="document.body.removeChild(document.getElementById(\'notif-modal\'))">&times;</button>' +
+        '<button class="icon-button" onclick="closeNotifModal()">&times;</button>' +
       '</div>';
       
   if (window.appState.notifications.length === 0) {
     html += '<p style="text-align:center; color:#999; margin:20px 0;">No notifications right now.</p>';
   } else {
+    html += '<div style="flex-grow:1; overflow-y:auto;">';
     window.appState.notifications.forEach(function(n) {
       var date = new Date(n.created_at).toLocaleDateString() + ' ' + new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      html += '<div style="padding:10px; margin-bottom:8px; background:'+(n.is_read ? '#f9f9f9' : '#eaf4fc')+'; border-radius:6px; border-left:3px solid '+(n.is_read ? '#ccc' : '#3498db')+'; cursor:pointer;" onclick="markNotificationRead(\''+n.id+'\', this)">' +
+      html += '<div class="notif-item" style="padding:10px; margin-bottom:8px; background:'+(n.is_read ? '#f9f9f9' : '#eaf4fc')+'; border-radius:6px; border-left:3px solid '+(n.is_read ? '#ccc' : '#3498db')+'; cursor:pointer;" onclick="markNotificationRead(\''+n.id+'\', this)">' +
         '<p style="margin:0 0 5px 0; font-size:13px; color:#333;">' + escapeHtml(n.message) + '</p>' +
         '<small style="color:#7f8c8d; font-size:11px;">' + date + ' &bull; by ' + escapeHtml(n.triggered_by || 'System') + '</small>' +
       '</div>';
     });
+    html += '</div>';
+    html += '<div style="border-top:1px solid #eee; padding-top:10px; margin-top:10px; text-align:center;">' +
+      '<button class="secondary-button" style="width:100%; font-size:12px; padding:6px;" onclick="markAllNotificationsRead()">Mark all as read</button>' +
+    '</div>';
   }
   
   html += '</div></div>';
