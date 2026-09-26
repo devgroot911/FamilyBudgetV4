@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --ink: #173b37;
   --ink-soft: #45635c;
   --muted: #71827c;
@@ -29,7 +29,7 @@ button { cursor: pointer; }
 nav { display: grid; gap: 5px; }
 .nav-item { text-align: left; border: 0; color: #aac2b7; background: transparent; padding: 12px 13px; border-radius: 9px; font-size: 13px; letter-spacing: .2px; }
 .nav-item span { display: inline-block; width: 25px; color: var(--mint-strong); font-size: 17px; vertical-align: -1px; }
-.nav-item:hover, .nav-item.active { color: white; background: rgba(255,255,255,.11); }
+.nav-item:hover, .nav-item.active { color: var(--mint-strong); background: rgba(255,255,255,.11); }
 .sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,.12); padding: 19px 10px 0; color: #a5c0b5; font-size: 11px; display: flex; align-items: center; gap: 7px; }
 .status-dot { width: 7px; height: 7px; background: #77d39a; border-radius: 50%; display: inline-block; }
 .main-content { width: min(1280px, 100%); margin: 0 auto; padding: 30px 44px 70px; }
@@ -138,3 +138,7 @@ h1, h2 { font-family: inherit; letter-spacing: 0; }
 
 .chart-container { position: relative; height: 250px; width: 100%; }
 @media (max-width: 600px) { .chart-container { height: 200px; } }
+/* Help & Guides styling */
+.help-section{background: var(--panel); color: var(--ink); border-color: var(--line);}
+.help-header{background: var(--panel); color: var(--ink); font-weight:600; padding:15px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
+.help-content{background: var(--paper); color: var(--ink); padding:15px; display:none;}
