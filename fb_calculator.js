@@ -30,20 +30,21 @@ var DEFAULT_RATES = {
   savings_pct: 5.0000
 };
 
-// Inject custom CSS for our beautiful UI Modal
+// Inject custom CSS for our beautiful UI Modal and compact layouts
 var style = document.createElement('style');
 style.innerHTML = 
-  '@keyframes fbFadeIn { from { opacity: 0; transform: translate(-50%, -45%); } to { opacity: 1; transform: translate(-50%, -50%); } }' +
-  '.fb-modal-header { background: #34495e; color: #fff; padding: 15px 25px; font-size: 18px; font-weight: bold; }' +
-  '.fb-modal-body { padding: 25px; overflow-y: auto; background: #fff; flex:1; }' +
-  '.fb-modal-footer { padding: 15px 25px; background: #f8f9fa; text-align: right; border-top: 1px solid #ecf0f1; }' +
-  '.fb-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }' +
-  '.fb-summary-box { background: #f4f6f7; padding: 12px; border-radius: 6px; border: 1px solid #d5dbdb; }' +
+  '.fb-modal-header { background: #34495e; color: #fff; padding: 12px 20px; font-size: 16px; font-weight: bold; }' +
+  '.fb-modal-body { padding: 20px; overflow-y: auto; background: #fff; flex:1; }' +
+  '.fb-modal-footer { padding: 12px 20px; background: #f8f9fa; text-align: right; border-top: 1px solid #ecf0f1; }' +
+  '.fb-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }' +
+  '.fb-summary-box { background: #f4f6f7; padding: 10px; border-radius: 6px; border: 1px solid #d5dbdb; }' +
   '.fb-summary-box span { display: block; color: #7f8c8d; font-size: 10px; text-transform: uppercase; font-weight: bold; margin-bottom: 3px; }' +
-  '.fb-summary-box strong { font-size: 16px; color: #2c3e50; }' +
-  '.fb-data-table td { padding: 5px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; }' +
+  '.fb-summary-box strong { font-size: 15px; color: #2c3e50; }' +
+  '.fb-data-table td { padding: 4px 0; font-size: 13px; border-bottom: 1px solid #f0f0f0; }' +
   '.fb-data-table td:first-child { color: #555; }' +
-  '.fb-data-table td:last-child { text-align: right; font-weight: bold; color: #222; }';
+  '.fb-data-table td:last-child { text-align: right; font-weight: bold; color: #222; }' +
+  '.fb-compact-input { padding: 6px !important; font-size: 13px !important; border-radius: 4px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }' +
+  '.fb-compact-label { font-size: 11px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }';
 document.head.appendChild(style);
 
 function calculateHouseBudget(houseCounts, rates) {
@@ -317,9 +318,10 @@ window.renderFbCalculator = function() {
       '</div>' +
       '<div class="fb-content" id="fb-subview-container"></div>' +
     '</div>' +
-    // Bulletproof Centered Overlay & Modal
-    '<div id="fb-modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75); z-index:9999;"></div>' +
-    '<div id="fb-modal-content" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:#fff; width:520px; max-width:95%; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.35); overflow:hidden; animation: fbFadeIn 0.3s ease; z-index:10000; max-height:90vh; flex-direction:column;"></div>';
+    // Fix for perfectly centered scroll-free Modal overlay
+    '<div id="fb-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:99999; align-items:center; justify-content:center; padding: 20px; box-sizing: border-box;">' +
+      '<div id="fb-modal-content" style="background:#fff; width:100%; max-width:500px; max-height:95vh; border-radius:10px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.5);"></div>' +
+    '</div>';
   
   container.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -474,11 +476,30 @@ window.fbSaveRates = function() {
   }).catch(function(e) { alert('Error saving rates: ' + e.message); });
 };
 
-window.fbEditHouseForm = function(hId) {
+window.fbEditHouseForm = function(hId, selectElement) {
+  if (!hId) {
+    window.fbState.editingHouseId = null;
+    fbRenderSubView();
+    return;
+  }
+
+  var counts = window.fbState.childCounts.find(function(c) { return c.house_id === hId; });
+  // Check if house already has a saved record this month
+  if (counts && counts.id) {
+    if (!confirm("There is already a saved entry for the selected user. Do you want to edit it?")) {
+      if (selectElement) selectElement.value = window.fbState.editingHouseId || ''; // Revert dropdown selection
+      return;
+    }
+  }
+
   if (window.fbState.hasUnsavedChanges) {
-    if (!confirm("You have unsaved changes in this house form. Are you sure you want to discard them?")) return;
+    if (!confirm("You have unsaved changes in this house form. Are you sure you want to discard them?")) {
+      if (selectElement) selectElement.value = window.fbState.editingHouseId || ''; // Revert dropdown selection
+      return;
+    }
     window.fbState.hasUnsavedChanges = false;
   }
+  
   window.fbState.editingHouseId = hId;
   fbRenderSubView();
 };
@@ -489,17 +510,12 @@ function fbRenderEntry(container) {
   var pName = p.name;
   var hId = window.fbState.editingHouseId || '';
   
+  // Dramatically reduce vertical height of the main Data Entry container
   var html = 
-    '<div class="panel" style="margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">' +
-      '<div class="section-heading" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">' +
-        '<div><h2 style="color:#2c3e50; margin:0 0 5px 0;">Data Entry & Balances</h2><small style="color:#7f8c8d;">Select Project & House</small></div>' +
-        '<div style="display:flex; gap:10px;">' +
-          '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Summary</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="grid two-col" style="gap:20px; background:#f8fbfc; padding:20px; border-radius:8px; border:1px solid #d4e6f1;">' +
-        '<div><label style="font-weight:600; color:#34495e; margin-bottom:8px; display:block;">1. Project / Village:</label>' +
-        '<select onchange="fbSelectProject(this.value)" class="form-control" style="width:100%; padding:10px; border-radius:6px; border:1px solid #bdc3c7;">';
+    '<div class="panel" style="margin-bottom: 15px; padding: 15px;">' +
+      '<div class="grid" style="grid-template-columns: 1fr 1.5fr auto; gap: 15px; margin-bottom:15px; align-items: end;">' +
+        '<div><label class="fb-compact-label">1. Project / Village:</label>' +
+        '<select onchange="fbSelectProject(this.value)" class="form-control fb-compact-input">';
         
   html += '<option value="">-- Select Project --</option>';
   window.fbState.myProjects.forEach(function(proj) {
@@ -508,8 +524,8 @@ function fbRenderEntry(container) {
   });
   html += '</select></div>';
   
-  html += '<div><label style="font-weight:600; color:#34495e; margin-bottom:8px; display:block;">2. House Number / Mother Name:</label>' +
-      '<select onchange="fbEditHouseForm(this.value)" class="form-control" style="width:100%; padding:10px; border-radius:6px; border:1px solid #bdc3c7;">';
+  html += '<div><label class="fb-compact-label">2. House Number / Mother Name:</label>' +
+      '<select onchange="fbEditHouseForm(this.value, this)" class="form-control fb-compact-input">';
   html += '<option value="">-- Select House --</option>';
   
   var validHouses = window.fbState.houses.filter(function(h) {
@@ -527,7 +543,9 @@ function fbRenderEntry(container) {
      
      html += '<option value="' + h.id + '" ' + sel + '>House ' + h.house_no + ' (' + mName + ')' + recordStatus + '</option>';
   });
-  html += '</select></div></div></div>';
+  html += '</select></div>';
+  
+  html += '<div><button class="ghost-button" onclick="fbDownloadTemplate()" style="padding:6px 12px; font-size:12px;">&#11015; Excel Summary</button></div></div>';
   
   if (hId) {
     var house = window.fbState.houses.find(function(h) { return h.id === hId; });
@@ -535,86 +553,79 @@ function fbRenderEntry(container) {
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
     var motherName = fbGetMotherName(pName, house.house_no);
     
-    html += '<div class="panel" style="margin-bottom:20px; border-left:5px solid #3498db; background:#ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius:8px; padding:25px;">' +
-      '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-        '<h3 style="margin:0; color:#2c3e50; font-size:20px; font-weight:600;">Data Entry For: <span style="color:#3498db">House ' + house.house_no + ' (' + motherName + ')</span></h3>' +
-        (window.fbState.hasUnsavedChanges ? '<span style="color:#e74c3c; font-weight:bold; font-size:14px; background:#fadbd8; padding:5px 10px; border-radius:4px;">⚠️ Unsaved Changes - Click Save</span>' : '') +
+    // Tighter Grid Layout for Inputs to reduce vertical scrolling
+    html += '<div style="border:1px solid #d4e6f1; border-radius:6px; background:#f8fbfc; padding:15px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">' +
+        '<h3 style="margin:0; color:#2c3e50; font-size:16px;">Editing: House ' + house.house_no + ' (' + motherName + ')</h3>' +
+        (window.fbState.hasUnsavedChanges ? '<span style="color:#e74c3c; font-size:12px; font-weight:bold; background:#fadbd8; padding:3px 8px; border-radius:4px;">⚠️ Unsaved Changes</span>' : '') +
       '</div>' +
-      '<hr style="border:0; border-top:1px solid #ecf0f1; margin:20px 0;">' +
       
-      '<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom:25px;">' +
-      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Children Over 12</label>' +
-      '<input type="number" min="0" class="form-control" value="' + (counts.food_o12||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'food_o12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
-      
-      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Children Under 12</label>' +
-      '<input type="number" min="0" class="form-control" value="' + (counts.food_u12||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'food_u12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
-      
-      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Mothers in House</label>' +
-      '<input type="number" min="0" class="form-control" value="' + (counts.mother_count||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'mother_count\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
+      '<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom:15px;">' +
+        '<div><label class="fb-compact-label">Children >12</label>' +
+        '<input type="number" min="0" class="fb-compact-input" value="' + (counts.food_o12||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'food_o12\', this.value)"></div>' +
+        
+        '<div><label class="fb-compact-label">Children <12</label>' +
+        '<input type="number" min="0" class="fb-compact-input" value="' + (counts.food_u12||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'food_u12\', this.value)"></div>' +
+        
+        '<div><label class="fb-compact-label">Mothers</label>' +
+        '<input type="number" min="0" class="fb-compact-input" value="' + (counts.mother_count||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'mother_count\', this.value)"></div>' +
       '</div>' + 
       
-      '<div class="grid two-col" style="gap:20px; margin-bottom:25px;">' +
-      '<div style="background:#f4f6f7; padding:20px; border-radius:8px; border:1px solid #e5e8e8;">' +
-        '<h4 style="margin-top:0; color:#2c3e50;">Manual Allowances & Adjustments</h4>' +
-        '<label style="font-weight:bold; color:#2c3e50; margin-bottom:8px; display:block;">Aunts Allowance <small>(Excel Math)</small></label>' +
-        '<input type="text" class="form-control" value="' + (counts.aunt_amount||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'aunt_amount\')" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #3498db;">' +
-        '<label style="font-weight:bold; color:#2c3e50; margin-bottom:8px; display:block;">Adjustments / Festival <small>(Excel Math)</small></label>' +
-        '<input type="text" class="form-control" value="' + (counts.adjustment||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'adjustment\')" style="width:100%; padding:10px; border:1px solid #3498db;">' +
-      '</div>' +
-      
-      '<div style="background:#fef9e7; padding:20px; border-radius:8px; border:1px solid #f9e79f;">' +
-        '<h4 style="margin-top:0; color:#d4ac0d;">Manual Withdrawals (For Balances)</h4>' +
-        '<label style="font-weight:bold; color:#d4ac0d; margin-bottom:8px; display:block;">Actual Clothing Withdrawal</label>' +
-        '<input type="text" class="form-control" value="' + calcs.actual_clothing_w + '" onblur="fbExcelInput(this, \''+hId+'\', \'clothing_o12\')" placeholder="Amount withdrawn" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #f1c40f;">' +
-        '<label style="font-weight:bold; color:#d4ac0d; margin-bottom:8px; display:block;">Actual Household Withdrawal</label>' +
-        '<input type="text" class="form-control" value="' + calcs.actual_household_w + '" onblur="fbExcelInput(this, \''+hId+'\', \'clothing_u12\')" placeholder="Amount withdrawn" style="width:100%; padding:10px; border:1px solid #f1c40f;">' +
-      '</div>' +
-      
-      '<div style="background:#fdf2e9; padding:20px; border-radius:8px; border:1px solid #edbb99; grid-column:span 2;">' +
-        '<h4 style="margin-top:0; color:#ca6f1e;">Interest & Charges</h4>' +
-        '<div class="grid two-col" style="gap:20px;">' +
-          '<div><label style="font-weight:bold; color:#ca6f1e; display:block; margin-bottom:8px;">Interest Received</label>' +
-          '<input type="text" class="form-control" value="' + calcs.interest_earned + '" onblur="fbExcelInput(this, \''+hId+'\', \'household\')" style="width:100%; padding:10px; border:1px solid #e67e22;"></div>' +
-          '<div><label style="font-weight:bold; color:#ca6f1e; display:block; margin-bottom:8px;">Bank and Other Charges</label>' +
-          '<input type="text" class="form-control" value="' + calcs.bank_charges + '" onblur="fbExcelInput(this, \''+hId+'\', \'arrears\')" style="width:100%; padding:10px; border:1px solid #e67e22;"></div>' +
+      '<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom:15px;">' +
+        '<div style="background:#fff; padding:12px; border:1px solid #e5e8e8; border-radius:6px;">' +
+          '<h4 style="margin:0 0 10px 0; font-size:13px; color:#2980b9;">Allowances (Excel Math)</h4>' +
+          '<label class="fb-compact-label">Aunt Amt</label>' +
+          '<input type="text" class="fb-compact-input" value="' + (counts.aunt_amount||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'aunt_amount\')" style="margin-bottom:8px;">' +
+          '<label class="fb-compact-label">Adjustments / Festival</label>' +
+          '<input type="text" class="fb-compact-input" value="' + (counts.adjustment||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'adjustment\')">' +
         '</div>' +
-      '</div>' +
+        
+        '<div style="background:#fff; padding:12px; border:1px solid #f9e79f; border-radius:6px;">' +
+          '<h4 style="margin:0 0 10px 0; font-size:13px; color:#d4ac0d;">Manual Withdrawals</h4>' +
+          '<label class="fb-compact-label">Actual Clothing</label>' +
+          '<input type="text" class="fb-compact-input" value="' + calcs.actual_clothing_w + '" onblur="fbExcelInput(this, \''+hId+'\', \'clothing_o12\')" style="margin-bottom:8px;">' +
+          '<label class="fb-compact-label">Actual Household</label>' +
+          '<input type="text" class="fb-compact-input" value="' + calcs.actual_household_w + '" onblur="fbExcelInput(this, \''+hId+'\', \'clothing_u12\')">' +
+        '</div>' +
+        
+        '<div style="background:#fff; padding:12px; border:1px solid #edbb99; border-radius:6px;">' +
+          '<h4 style="margin:0 0 10px 0; font-size:13px; color:#ca6f1e;">Interest & Charges</h4>' +
+          '<label class="fb-compact-label">Interest Received</label>' +
+          '<input type="text" class="fb-compact-input" value="' + calcs.interest_earned + '" onblur="fbExcelInput(this, \''+hId+'\', \'household\')" style="margin-bottom:8px;">' +
+          '<label class="fb-compact-label">Bank & Other Charges</label>' +
+          '<input type="text" class="fb-compact-input" value="' + calcs.bank_charges + '" onblur="fbExcelInput(this, \''+hId+'\', \'arrears\')">' +
+        '</div>' +
       '</div>' + 
       
-      '<div style="margin-top:25px; padding:20px; background:#e8f8f5; border-radius:8px; border: 1px solid #d1f2eb;">' +
-        '<h4 style="margin-top:0; color:#1abc9c; font-size:18px;">Monthly Balances & Withdrawals (Live Preview)</h4>' +
-        '<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">' +
-          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Food Balance</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong><br><small style="color:#999">(1st W: ' + calcs.first_withdrawal.toLocaleString() + ' | 2nd W: ' + calcs.second_withdrawal.toLocaleString() + ')</small></div>' +
-          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Clothing Balance</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong><br><small style="color:#999">(Budget: ' + calcs.total_clothing.toLocaleString() + ')</small></div>' +
-          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Household Balance</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong><br><small style="color:#999">(Budget: ' + calcs.total_hh.toLocaleString() + ')</small></div>' +
-          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Interest Balance</small><strong style="font-size:18px; color:#27ae60;">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+      // Inline Action Row
+      '<div style="background:#fff; padding:12px; border:1px solid #d1f2eb; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">' +
+        '<div style="display:flex; gap:20px; text-align:center;">' +
+          '<div><div style="font-size:11px; color:#7f8c8d; font-weight:bold;">Food Bal</div><div style="font-size:14px; font-weight:bold;">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div></div>' +
+          '<div><div style="font-size:11px; color:#7f8c8d; font-weight:bold;">Clothing Bal</div><div style="font-size:14px; font-weight:bold;">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div></div>' +
+          '<div><div style="font-size:11px; color:#7f8c8d; font-weight:bold;">HH Bal</div><div style="font-size:14px; font-weight:bold;">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div></div>' +
+          '<div><div style="font-size:11px; color:#27ae60; font-weight:bold;">Interest Bal</div><div style="font-size:14px; font-weight:bold; color:#27ae60;">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div></div>' +
+        '</div>' +
+        '<div>' +
+          '<button class="primary-button" onclick="fbReviewAndSave(\''+hId+'\')" style="padding:10px 20px; font-size:14px; background:#27ae60; border:none; border-radius:6px; font-weight:bold; box-shadow:0 4px 6px rgba(39, 174, 96, 0.2); cursor:pointer;">&#10004; Review & Save</button>' +
         '</div>' +
       '</div>' +
-      
-      '<div style="margin-top:25px; text-align:right; border-top:1px solid #ecf0f1; padding-top:20px;">' +
-        '<button class="primary-button" onclick="fbReviewAndSave(\''+hId+'\')" style="font-size:16px; padding:12px 30px; background:#27ae60; border:none; border-radius:6px; cursor:pointer; box-shadow:0 4px 6px rgba(39, 174, 96, 0.2);">&#10004; Review & Save House Data</button>' +
-      '</div>' +
-
     '</div>';
-  } else {
-    html += '<div class="panel" style="text-align:center; padding:60px 20px; color:#95a5a6; background:#fdfdfd; border:2px dashed #ecf0f1; border-radius:8px;">' +
-      '<div style="font-size:48px; margin-bottom:15px;">📊</div>' +
-      '<h3 style="margin:0; font-weight:normal;">Please select a House / Mother above to enter data.</h3></div>';
   }
+  html += '</div>'; // close main panel
   
-  html += '<div class="panel" style="overflow-x:auto; margin-top:20px;">' +
-    '<h3 style="color:#2c3e50;">Balance Overview</h3>' +
-    '<table class="data-table" style="min-width: 1100px; font-size: 13px; text-align:left; border-collapse:collapse; width:100%;">' +
+  html += '<div class="panel" style="overflow-x:auto; padding:15px;">' +
+    '<h3 style="color:#2c3e50; margin:0 0 10px 0; font-size:15px;">Balance Overview</h3>' +
+    '<table class="data-table" style="min-width: 1000px; font-size: 12px; text-align:left; border-collapse:collapse; width:100%;">' +
       '<thead>' +
         '<tr style="background:#f4f6f7; border-bottom:2px solid #bdc3c7;">' +
-          '<th style="padding:12px;">House</th>' +
-          '<th style="padding:12px;">Mother</th>' +
-          '<th style="padding:12px;">Savings</th>' +
-          '<th style="padding:12px;">1st W (Food)</th>' +
-          '<th style="padding:12px;">2nd W (Food)</th>' +
-          '<th style="padding:12px; background:#f9ebea;">Clothing Bal</th>' +
-          '<th style="padding:12px; background:#f9ebea;">HH Bal</th>' +
-          '<th style="padding:12px; background:#e8f8f5;">Interest Bal</th>' +
+          '<th style="padding:8px;">House</th>' +
+          '<th style="padding:8px;">Mother</th>' +
+          '<th style="padding:8px;">Savings</th>' +
+          '<th style="padding:8px;">1st W (Food)</th>' +
+          '<th style="padding:8px;">2nd W (Food)</th>' +
+          '<th style="padding:8px; background:#f9ebea;">Clothing Bal</th>' +
+          '<th style="padding:8px; background:#f9ebea;">HH Bal</th>' +
+          '<th style="padding:8px; background:#e8f8f5;">Interest Bal</th>' +
         '</tr>' +
       '</thead>' +
       '<tbody>';
@@ -627,14 +638,14 @@ function fbRenderEntry(container) {
     
     html += 
       '<tr style="'+isSel+' cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\''+(hId===h.id?'#eafaf1':'#fff')+'\'" onclick="fbEditHouseForm(\''+h.id+'\')">' +
-        '<td style="padding:10px;"><strong>' + h.house_no + '</strong></td>' +
-        '<td style="padding:10px;">' + cMotherName + '</td>' +
-        '<td style="padding:10px; color:#2980b9; font-weight:bold;">' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:10px;">' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:10px;">' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:10px; background:#fdf2e9; font-weight:bold;">' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:10px; background:#fdf2e9; font-weight:bold;">' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="padding:10px; background:#eafaf1; font-weight:bold; color:#27ae60;">' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:6px 8px;"><strong>' + h.house_no + '</strong></td>' +
+        '<td style="padding:6px 8px;">' + cMotherName + '</td>' +
+        '<td style="padding:6px 8px; color:#2980b9; font-weight:bold;">' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:6px 8px;">' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:6px 8px;">' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:6px 8px; background:#fdf2e9; font-weight:bold;">' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:6px 8px; background:#fdf2e9; font-weight:bold;">' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:6px 8px; background:#eafaf1; font-weight:bold; color:#27ae60;">' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
       '</tr>';
   });
   
@@ -694,30 +705,28 @@ window.fbReviewAndSave = function(houseId) {
   var html = 
     '<div class="fb-modal-header">Double Verification Required</div>' +
     '<div class="fb-modal-body">' +
-      '<div style="background:#e8f4f8; padding:12px; border-radius:6px; margin-bottom:15px; border-left:4px solid #3498db;">' +
-        '<span style="color:#2980b9; font-weight:bold; font-size:15px;">Saving Data For: House ' + house.house_no + ' (' + motherName + ')</span>' +
+      '<div style="background:#e8f4f8; padding:10px; border-radius:6px; margin-bottom:15px; border-left:4px solid #3498db;">' +
+        '<span style="color:#2980b9; font-weight:bold; font-size:14px;">Saving Data For: House ' + house.house_no + ' (' + motherName + ')</span>' +
       '</div>' +
       
-      '<h4 style="border-bottom:2px solid #ecf0f1; padding-bottom:8px; margin-top:20px; color:#2c3e50; font-size:16px;">1. Raw Entered Data Summary</h4>' +
-      '<table class="fb-data-table" style="width:100%; margin-bottom:20px; background:#fcfcfc; padding:10px; border-radius:6px; border:1px solid #f0f0f0;">' +
+      '<h4 style="border-bottom:1px solid #ecf0f1; padding-bottom:5px; margin-top:0; color:#2c3e50; font-size:14px;">1. Raw Entered Data Summary</h4>' +
+      '<table class="fb-data-table" style="width:100%; margin-bottom:15px; background:#fcfcfc; padding:8px; border-radius:6px; border:1px solid #f0f0f0;">' +
         '<tr><td>Children Over 12:</td><td>' + (existing.food_o12||0) + '</td></tr>' +
         '<tr><td>Children Under 12:</td><td>' + (existing.food_u12||0) + '</td></tr>' +
         '<tr><td>Mothers:</td><td>' + (existing.mother_count||0) + '</td></tr>' +
-        '<tr><td>Aunt Allowance:</td><td>LKR ' + (existing.aunt_amount||0).toLocaleString() + '</td></tr>' +
-        '<tr><td>Adjustments:</td><td>LKR ' + (existing.adjustment||0).toLocaleString() + '</td></tr>' +
-        '<tr><td>Actual Clothing Withdrawal:</td><td>LKR ' + calcs.actual_clothing_w.toLocaleString() + '</td></tr>' +
-        '<tr><td>Actual Household Withdrawal:</td><td>LKR ' + calcs.actual_household_w.toLocaleString() + '</td></tr>' +
+        '<tr><td>Aunt Allowance / Adjustments:</td><td>LKR ' + (existing.aunt_amount||0).toLocaleString() + ' / LKR ' + (existing.adjustment||0).toLocaleString() + '</td></tr>' +
+        '<tr><td>Actual Clothing / HH Withdrawal:</td><td>LKR ' + calcs.actual_clothing_w.toLocaleString() + ' / LKR ' + calcs.actual_household_w.toLocaleString() + '</td></tr>' +
         '<tr><td style="border-bottom:none;">Interest Received / Bank Charges:</td><td style="border-bottom:none;">LKR ' + calcs.interest_earned.toLocaleString() + ' / LKR ' + calcs.bank_charges.toLocaleString() + '</td></tr>' +
       '</table>' +
       
-      '<h4 style="border-bottom:2px solid #ecf0f1; padding-bottom:8px; margin-top:0; color:#2c3e50; font-size:16px;">2. Budget & Withdrawals</h4>' +
+      '<h4 style="border-bottom:1px solid #ecf0f1; padding-bottom:5px; margin-top:0; color:#2c3e50; font-size:14px;">2. Budget & Withdrawals</h4>' +
       '<div class="fb-summary-grid">' +
         '<div class="fb-summary-box"><span>Total Budget</span><strong>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
         '<div class="fb-summary-box" style="background:#e8f4f8; border-color:#d4e6f1;"><span>Savings (5%)</span><strong style="color:#2980b9">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
         '<div class="fb-summary-box"><span>1st Withdrawal</span><strong>LKR ' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
         '<div class="fb-summary-box"><span>2nd Withdrawal</span><strong>LKR ' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
       '</div>' +
-      '<h4 style="border-bottom:2px solid #ecf0f1; padding-bottom:8px; color:#2c3e50; font-size:16px;">3. Closing Ledger Balances</h4>' +
+      '<h4 style="border-bottom:1px solid #ecf0f1; padding-bottom:5px; color:#2c3e50; font-size:14px; margin-top:0;">3. Closing Ledger Balances</h4>' +
       '<div class="fb-summary-grid" style="margin-bottom:0;">' +
         '<div class="fb-summary-box"><span>Food Balance</span><strong>LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
         '<div class="fb-summary-box"><span>Clothing Balance</span><strong>LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
@@ -726,28 +735,26 @@ window.fbReviewAndSave = function(houseId) {
       '</div>' +
     '</div>' +
     '<div class="fb-modal-footer">' +
-      '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.getElementById(\'fb-modal-content\').style.display=\'none\';" style="margin-right:15px; padding:10px 20px; font-weight:bold;">Cancel & Edit</button>' +
-      '<button class="primary-button" onclick="fbConfirmSaveData(\''+houseId+'\')" style="padding:12px 25px; background:#27ae60; border:none; border-radius:6px; font-size:15px; font-weight:bold; box-shadow:0 4px 6px rgba(39, 174, 96, 0.3);">Confirm & Save</button>' +
+      '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px; padding:10px 20px; font-weight:bold;">Cancel & Edit</button>' +
+      '<button class="primary-button" onclick="fbConfirmSaveData(\''+houseId+'\')" style="padding:10px 20px; background:#27ae60; border:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow:0 4px 6px rgba(39, 174, 96, 0.3);">Confirm & Save</button>' +
     '</div>';
     
   document.getElementById('fb-modal-content').innerHTML = html;
   
-  // Use explicit styles to guarantee perfect absolute centering independently of flexbox support bugs
-  document.getElementById('fb-modal-overlay').style.display = 'block';
-  document.getElementById('fb-modal-content').style.display = 'flex';
+  // Disable body scroll to prevent viewport jumping and guarantee perfect center
+  document.body.style.overflow = 'hidden';
+  document.getElementById('fb-modal-overlay').style.display = 'flex';
 };
 
 window.fbConfirmSaveData = function(houseId) {
   var existing = window.fbState.childCounts.find(function(c) { return c.house_id === houseId; });
   var calcs = calculateHouseBudget(existing, window.fbState.rateVariables);
   
-  // Write to explicit physical database columns if user has created them
   existing.food_balance = calcs.food_balance;
   existing.clothing_balance = calcs.clothing_balance;
   existing.household_balance = calcs.household_balance;
   existing.interest_balance = calcs.interest_balance;
   
-  // Store a JSON snapshot as a robust backup
   existing.remarks = JSON.stringify({
     savings: calcs.savings,
     first_w: calcs.first_withdrawal,
@@ -755,13 +762,11 @@ window.fbConfirmSaveData = function(houseId) {
   });
   
   document.getElementById('fb-modal-overlay').style.display = 'none';
-  document.getElementById('fb-modal-content').style.display = 'none';
+  document.body.style.overflow = '';
   
-  // upsert and select().single() ensures we get the new 'id' back to prevent duplicates
   supabase.from('fb_child_counts').upsert([existing], { onConflict: 'project_id, year, month, house_id' }).select().single().then(function(res) {
     if (res.error) throw res.error;
     
-    // Update local cache so we don't insert a duplicate row on next save
     var idx = window.fbState.childCounts.findIndex(function(c) { return c.house_id === houseId; });
     if(idx > -1) window.fbState.childCounts[idx] = res.data;
     else window.fbState.childCounts.push(res.data);
