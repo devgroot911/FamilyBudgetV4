@@ -925,6 +925,11 @@ window.fbConfirmSaveData = function(houseNo) {
   
   payload.remarks = JSON.stringify({ savings: calcs.savings, first_w: calcs.first_withdrawal, second_w: calcs.second_withdrawal, mother: houseData.mother_name, transfers: transferLog, opening: openingObj });
   
+  delete payload.open_food;
+  delete payload.open_cloth;
+  delete payload.open_hh;
+  delete payload.open_int;
+  
   document.getElementById('fb-modal-overlay').style.display = 'none';
   document.body.style.overflow = '';
   
