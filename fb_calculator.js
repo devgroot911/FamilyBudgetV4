@@ -15,7 +15,6 @@ window.fbState = {
   loading: false
 };
 
-// Default rates if none exist
 var DEFAULT_RATES = {
   food_o12_rate: 15000,
   food_u12_rate: 10000,
@@ -28,7 +27,6 @@ var DEFAULT_RATES = {
   savings_pct: 5.0000
 };
 
-// Pure calculation engine
 function calculateHouseBudget(houseCounts, rates) {
   var getRate = function(key) {
     var found = rates.find(function(r) { return r.variable_key === key; });
@@ -66,23 +64,12 @@ function calculateHouseBudget(houseCounts, rates) {
   var net_payable = first_withdrawal + second_withdrawal + adjustments - savings;
 
   return {
-    food_o12_amount: food_o12_amount, 
-    food_u12_amount: food_u12_amount, 
-    clothing_o12_amount: clothing_o12_amount, 
-    clothing_u12_amount: clothing_u12_amount,
-    household_amount: household_amount, 
-    mother_amount: mother_amount, 
-    aunt_amount: aunt_amount, 
-    total_food: total_food, 
-    total_budget: total_budget,
-    first_withdrawal: first_withdrawal, 
-    second_withdrawal: second_withdrawal, 
-    savings: savings, 
-    net_payable: net_payable
+    food_o12_amount: food_o12_amount, food_u12_amount: food_u12_amount, clothing_o12_amount: clothing_o12_amount, clothing_u12_amount: clothing_u12_amount,
+    household_amount: household_amount, mother_amount: mother_amount, aunt_amount: aunt_amount, total_food: total_food, total_budget: total_budget,
+    first_withdrawal: first_withdrawal, second_withdrawal: second_withdrawal, savings: savings, net_payable: net_payable
   };
 }
 
-// Role guards
 function getFbRole() {
   var role = (sessionStorage.getItem('role') || '').toLowerCase();
   if (role.indexOf('admin') !== -1) return 'admin';
@@ -97,7 +84,6 @@ function canAccessFb() {
   return r === 'admin' || r === 'national' || r === 'accountant' || r === 'assistant';
 }
 
-// API wrappers
 function logAudit(action, projectId, details) {
   var username = sessionStorage.getItem('username');
   return supabase.from('fb_audit_logs').insert({
@@ -166,14 +152,11 @@ function loadProjectData() {
     window.fbState.rateVariables = results[2].data || [];
     window.fbState.monthlySummary = results[3].data || null;
     
-    // AUTO-SYNC HOUSES WITH MOTHERS based on Village mapping.
-    // If the project name matches a village, ensure all mothers in that village have a house record.
     if (window.state && window.state.profiles) {
-      var projectName = window.fbState.activeProject.name; // e.g. "Galle"
+      var projectName = window.fbState.activeProject.name;
       var villageMothers = Object.keys(window.state.profiles).filter(function(uname) {
         var p = window.state.profiles[uname];
         var isMother = (p.role && p.role.toLowerCase() === 'mother') || (p.usertype && p.usertype.toLowerCase().indexOf('mother') !== -1);
-        // Match project name with village name loosely (or explicitly)
         return isMother && p.village && projectName.toLowerCase().indexOf(p.village.toLowerCase()) !== -1;
       });
       
@@ -183,11 +166,7 @@ function loadProjectData() {
       
       if (missingMothers.length > 0) {
         var newHouses = missingMothers.map(function(uname, idx) {
-          return {
-            project_id: pid,
-            house_no: 'Auto-' + uname,
-            mother_username: uname
-          };
+          return { project_id: pid, house_no: 'Auto-' + uname, mother_username: uname };
         });
         return supabase.from('fb_houses').insert(newHouses).then(function() {
           return supabase.from('fb_houses').select('*').eq('project_id', pid);
@@ -208,7 +187,6 @@ function loadProjectData() {
   });
 }
 
-// UI Renderers
 window.renderFbCalculator = function() {
   if (!canAccessFb()) {
     document.querySelector('#view-fb-calculator').innerHTML = '<div class="empty">Access Denied. You do not have permission to view the FB Calculator.</div>';
@@ -231,7 +209,6 @@ window.renderFbCalculator = function() {
       '</div>' +
     '</div>';
   
-  // Bind nav events
   container.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       window.fbState.currentSubView = e.target.dataset.subview;
@@ -246,13 +223,11 @@ function fbRenderSubView() {
   var container = document.querySelector('#fb-subview-container');
   if (!container) return;
   
-  // Highlight active nav
   document.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
     btn.style.fontWeight = btn.dataset.subview === window.fbState.currentSubView ? 'bold' : 'normal';
     btn.style.background = btn.dataset.subview === window.fbState.currentSubView ? '#f0f0f0' : 'transparent';
   });
   
-  // Show/Hide project dependent tabs
   var hasProj = !!window.fbState.activeProject;
   ['dashboard', 'rates', 'entry', 'history'].forEach(function(id) {
     var el = document.getElementById('fb-nav-' + id);
@@ -282,8 +257,9 @@ function fbRenderProjects(container) {
   } else {
     html += '<div class="grid two-col">';
     window.fbState.myProjects.forEach(function(p) {
+      // NOTE: Using properly escaped quotes for the onclick attribute
       html += 
-        '<div class="panel" style="cursor:pointer; border:1px solid #ddd" onclick="fbSelectProject(\\'' + p.id + '\\')">' +
+        '<div class="panel" style="cursor:pointer; border:1px solid #ddd" onclick="fbSelectProject(\'' + p.id + '\')">' +
           '<h3>' + p.name + '</h3>' +
           '<p>Click to open module</p>' +
         '</div>';
@@ -419,16 +395,17 @@ function fbRenderEntry(container) {
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
     var motherName = (window.state && window.state.profiles && window.state.profiles[h.mother_username]) ? window.state.profiles[h.mother_username].name : h.mother_username;
     
+    // NOTE: Using properly escaped quotes for onclick attributes
     html += 
       '<tr>' +
-        '<td><input type="text" style="width:60px" value="' + h.house_no + '" onchange="fbUpdateHouse(\\'' + h.id + '\\', this.value)" /></td>' +
+        '<td><input type="text" style="width:60px" value="' + h.house_no + '" onchange="fbUpdateHouse(\'' + h.id + '\', this.value)" /></td>' +
         '<td>' + motherName + '<br><small>(' + h.mother_username + ')</small></td>' +
-        '<td><input type="number" style="width:60px" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount(\\'' + h.id + '\\', \\'food_o12\\', this.value)" /></td>' +
-        '<td><input type="number" style="width:60px" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount(\\'' + h.id + '\\', \\'food_u12\\', this.value)" /></td>' +
-        '<td><input type="number" style="width:60px" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount(\\'' + h.id + '\\', \\'clothing_o12\\', this.value)" /></td>' +
-        '<td><input type="number" style="width:60px" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount(\\'' + h.id + '\\', \\'clothing_u12\\', this.value)" /></td>' +
-        '<td><input type="number" style="width:60px" value="' + (counts.household || 0) + '" onchange="fbUpdateCount(\\'' + h.id + '\\', \\'household\\', this.value)" /></td>' +
-        '<td><input type="number" style="width:60px" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount(\\'' + h.id + '\\', \\'mother_count\\', this.value)" /></td>' +
+        '<td><input type="number" style="width:60px" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_o12\', this.value)" /></td>' +
+        '<td><input type="number" style="width:60px" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_u12\', this.value)" /></td>' +
+        '<td><input type="number" style="width:60px" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_o12\', this.value)" /></td>' +
+        '<td><input type="number" style="width:60px" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_u12\', this.value)" /></td>' +
+        '<td><input type="number" style="width:60px" value="' + (counts.household || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'household\', this.value)" /></td>' +
+        '<td><input type="number" style="width:60px" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'mother_count\', this.value)" /></td>' +
         '<td>' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
         '<td>' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
       '</tr>';
