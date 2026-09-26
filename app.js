@@ -1255,6 +1255,21 @@ function renderProfile() {
       btn.disabled = true;
       btn.textContent = editing ? 'Updating...' : 'Creating...';
   
+      var newUsername = document.querySelector('#new-user-username').value.trim();
+      
+      // Client-side uniqueness check for new users
+      if (!editing) {
+        var exists = (window.loadedUsers || []).some(function(u) {
+          return u.username.toLowerCase() === newUsername.toLowerCase();
+        });
+        if (exists) {
+          notify('Error: Username already exists!');
+          btn.disabled = false;
+          btn.textContent = 'Create User';
+          return;
+        }
+      }
+
       var payload = {
         name: document.querySelector('#new-user-name').value.trim(),
         password: document.querySelector('#new-user-password').value.trim(),
@@ -1287,7 +1302,7 @@ function renderProfile() {
           })
           .catch(function(err) { console.error(err); notify('Failed to update user'); btn.disabled = false; btn.textContent = 'Update User'; });
       } else {
-        payload.username = document.querySelector('#new-user-username').value.trim();
+        payload.username = newUsername;
         supabase.from('users').insert(payload)
           .then(function(res) {
             if (res.error) throw res.error;
@@ -1298,7 +1313,7 @@ function renderProfile() {
             console.error(err);
             if (err.code === '23505') notify('Username already exists');
             else notify('Failed to add user');
-            btn.disabled = false;
+            btn.disabled = false; 
             btn.textContent = 'Create User';
           });
       }
