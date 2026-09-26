@@ -507,13 +507,13 @@ function render() {
   if (role.indexOf('admin') !== -1) {
     document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'flex'; });
   } else if (isManager) {
-    var views = ['dashboard', 'reports', 'records', 'expenses', 'allowances', 'items', 'profile', 'fb-calculator'];
+    var views = ['dashboard', 'reports', 'records', 'expenses', 'allowances', 'items', 'profile', 'fb-calculator', 'help'];
     views.forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
       if (el) el.style.display = 'flex';
     });
   } else {
-    ['dashboard', 'expenses', 'records', 'allowances', 'items', 'reports', 'profile'].forEach(function(v) {
+    ['dashboard', 'expenses', 'records', 'allowances', 'items', 'reports', 'profile', 'help'].forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
       if (el) el.style.display = 'flex';
     });
@@ -530,14 +530,14 @@ function render() {
   if (activeEl) activeEl.classList.add('active');
 
   // Page title
-  var titles = { dashboard: 'Dashboard', expenses: 'Expense Entry', records: 'Manage Expenses', allowances: 'Allowances', items: 'Item Master', reports: 'Past Records & Reports', profile: 'Profile & Settings', users: 'Manage Users', 'fb-calculator': 'Family Budget Calculator' };
+  var titles = { dashboard: 'Dashboard', expenses: 'Expense Entry', records: 'Manage Expenses', allowances: 'Allowances', items: 'Item Master', reports: 'Past Records & Reports', profile: 'Profile & Settings', users: 'Manage Users', 'fb-calculator': 'Family Budget Calculator', 'help': 'Help & Guides' };
   var titleEl = document.querySelector('#page-title');
   var kickerEl = document.querySelector('#page-kicker');
   if (titleEl) titleEl.textContent = titles[activeView] || activeView;
   if (kickerEl) kickerEl.textContent = activeView === 'dashboard' ? 'HOUSEHOLD LEDGER' : 'FAMILY BUDGET / ' + (titles[activeView] || '').toUpperCase();
 
   // Render view
-  var renderers = { dashboard: renderDashboard, expenses: renderExpenses, records: renderRecords, allowances: renderAllowances, items: renderItems, reports: renderReports, profile: renderProfile, users: renderUsers, 'fb-calculator': window.renderFbCalculator || function(){} };
+  var renderers = { dashboard: renderDashboard, expenses: renderExpenses, records: renderRecords, allowances: renderAllowances, items: renderItems, reports: renderReports, profile: renderProfile, users: renderUsers, 'fb-calculator': window.renderFbCalculator || function(){}, 'help': renderHelp };
   if (renderers[activeView]) renderers[activeView]();
   if (activeView === 'expenses') { enhanceExpenseForm(); }
   updateHeader();
@@ -2371,3 +2371,114 @@ setInterval(function() {
      fetchNotifications();
   }
 }, 60000); // Poll every minute
+
+
+function renderHelp() {
+  var role = (sessionStorage.getItem('role') || '').toLowerCase();
+  var isGlobal = (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1 || role === 'national_director' || role.indexOf('assistant') !== -1);
+  var isDirector = (role.indexOf('director') !== -1);
+
+  var html = '<div class="section-heading"><div><h2>Help & Guides</h2><small>User manual and instructions</small></div></div>';
+  
+  html += '<style>' +
+    '.help-section { margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: var(--radius); overflow: hidden; }' +
+    '.help-header { background: var(--panel-bg); padding: 15px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }' +
+    '.help-header:hover { background: #f0f4f8; }' +
+    '.help-content { padding: 15px; display: none; background: #fff; border-top: 1px solid var(--border-color); line-height: 1.6; }' +
+    '.help-content p { margin-top: 0; }' +
+    '.help-content ul { padding-left: 20px; }' +
+    '.help-content li { margin-bottom: 8px; }' +
+    '.help-btn-fake { display: inline-block; padding: 2px 8px; background: var(--primary-color); color: #fff; border-radius: 4px; font-size: 0.85em; }' +
+  '</style>';
+
+  html += '<div class="help-section">' +
+            '<div class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\'">' +
+               '<span>📘 1. Introduction & Basics (For All Users)</span>' +
+               '<span>▼</span>' +
+            '</div>' +
+            '<div class="help-content">' +
+               '<p>Welcome to the Family Budget App!</p>' +
+               '<ul>' +
+                 '<li><strong>Navigation:</strong> Use the sidebar on the left (or the bottom menu on mobile) to switch between different views like Dashboard, Expense Entry, and Reports.</li>' +
+                 '<li><strong>Offline Support:</strong> This app works offline! If you lose internet, you can still add expenses. The app will sync automatically when you reconnect.</li>' +
+                 '<li><strong>Profile & Settings:</strong> Click "Profile & Settings" to change your display name or update your password.</li>' +
+               '</ul>' +
+            '</div>' +
+          '</div>';
+
+  html += '<div class="help-section">' +
+            '<div class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\'">' +
+               '<span>🏠 2. Mother / YCCW Guide (House Level)</span>' +
+               '<span>▼</span>' +
+            '</div>' +
+            '<div class="help-content">' +
+               '<p><strong>The Dashboard</strong></p>' +
+               '<ul>' +
+                 '<li>The overview shows your Total Budget, Total Expenditure, and Available Balance.</li>' +
+                 '<li>The budget charts show how much you have left in each category (Food, Household, Clothing).</li>' +
+               '</ul>' +
+               '<p><strong>Adding Expenses</strong></p>' +
+               '<ul>' +
+                 '<li>Go to the <span class="help-btn-fake">➕ Add expense</span> tab.</li>' +
+                 '<li>Select the date, item name, and price. Pick the correct category from the dropdown.</li>' +
+                 '<li>If you have a receipt, type the receipt number in the "Note (optional)" field.</li>' +
+                 '<li>Click <strong>Save Expense</strong> to log it. Your balance will update immediately.</li>' +
+               '</ul>' +
+               '<p><strong>Deleting Mistakes</strong></p>' +
+               '<ul>' +
+                 '<li>If you make a mistake, go to the <span class="help-btn-fake">📁 Records</span> tab.</li>' +
+                 '<li>Find the incorrect entry and click the red <strong>Delete</strong> button. Your balance will be refunded.</li>' +
+               '</ul>' +
+               '<p><strong>Reports</strong></p>' +
+               '<ul>' +
+                 '<li>Go to <span class="help-btn-fake">📄 Reports</span> to download an automated Excel summary of your house\'s monthly budget and spending.</li>' +
+               '</ul>' +
+            '</div>' +
+          '</div>';
+
+  if (isDirector || isGlobal) {
+    html += '<div class="help-section">' +
+              '<div class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\'">' +
+                 '<span>🏘️ 3. Village Director Guide</span>' +
+                 '<span>▼</span>' +
+              '</div>' +
+              '<div class="help-content">' +
+                 '<p><strong>Village Oversight</strong></p>' +
+                 '<ul>' +
+                   '<li>Use the dropdown filter on the <span class="help-btn-fake">📈 Overview</span> to see aggregated data for the whole village or select a specific house.</li>' +
+                   '<li>Go to <span class="help-btn-fake">📁 Records</span> to audit expenses entered by the mothers in your village.</li>' +
+                 '</ul>' +
+                 '<p><strong>Approvals & Locking</strong></p>' +
+                 '<ul>' +
+                   '<li>Once a month is finished and you have verified all receipts for a house, go to the <span class="help-btn-fake">📄 Reports</span> tab.</li>' +
+                   '<li>Click <span class="help-btn-fake">Finalize & Lock Month</span>. This prevents mothers from adding or editing expenses for that month.</li>' +
+                 '</ul>' +
+              '</div>' +
+            '</div>';
+  }
+
+  if (isGlobal) {
+    html += '<div class="help-section">' +
+              '<div class="help-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\'">' +
+                 '<span>⚙️ 4. Administrator Guide</span>' +
+                 '<span>▼</span>' +
+              '</div>' +
+              '<div class="help-content">' +
+                 '<p><strong>Family Budget Calculator</strong></p>' +
+                 '<ul>' +
+                   '<li>Go to <span class="help-btn-fake">&#128176; FB Calc</span> to manage house allocations.</li>' +
+                   '<li>Select a village and house. Update the number of children over/under 12.</li>' +
+                   '<li>Click the <span class="help-btn-fake">⚙️ Configure Rates</span> button to update global rates (e.g., Food Rate, Clothing Rate).</li>' +
+                   '<li>Click the <span class="help-btn-fake">Adjust</span> button next to a house to add Manual Deductions (like arrears) or Festival Bonuses.</li>' +
+                 '</ul>' +
+                 '<p><strong>Manage Users</strong></p>' +
+                 '<ul>' +
+                   '<li>Go to <span class="help-btn-fake">👥 Manage Users</span> to create new accounts.</li>' +
+                   '<li>You can assign users to specific villages and houses. If they forget their password, you can reset it here.</li>' +
+                 '</ul>' +
+              '</div>' +
+            '</div>';
+  }
+
+  document.querySelector('#view-help').innerHTML = html;
+}
