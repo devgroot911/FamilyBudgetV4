@@ -29,11 +29,11 @@ var DEFAULT_RATES = {
 
 var style = document.createElement('style');
 style.innerHTML = 
-  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:999999; align-items:center; justify-content:center; padding:15px; box-sizing:border-box; overflow-y:auto; }' +
-  '.fb-modal-content { margin:auto; background:#fff; width:100%; max-width:700px; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
-  '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:12px 20px; font-weight:bold; font-size:16px; color:#333; }' +
-  '.fb-modal-body { padding:15px 20px; overflow-y:auto; flex:1; font-size:13px; line-height:1.4; color:#444; }' +
-  '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:12px 20px; text-align:right; }' +
+  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); z-index:999999; padding:40px 15px; box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; }' +
+  '.fb-modal-content { margin:0 auto; background:#fff; width:100%; max-width:700px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
+  '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; border-radius:8px 8px 0 0; }' +
+  '.fb-modal-body { padding:20px; font-size:13px; line-height:1.4; color:#444; }' +
+  '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:15px 20px; text-align:right; border-radius:0 0 8px 8px; }' +
   
   '.fb-layout { display: flex; flex-direction: column; gap: 15px; align-items: stretch; }' +
   '@media(min-width: 850px) { .fb-layout { flex-direction: row; align-items: flex-start; } .fb-sidebar { flex: 0 0 220px; position: sticky; top: 20px; } .fb-content { flex: 1; min-width: 0; } }' +
@@ -73,7 +73,7 @@ window.fbAlert = function(msg, callback) {
               '<button class="primary-button" id="fb-alert-btn">OK</button></div>';
    document.getElementById('fb-modal-content').innerHTML = html;
    document.body.style.overflow = 'hidden';
-   document.getElementById('fb-modal-overlay').style.display = 'flex';
+   document.getElementById('fb-modal-overlay').style.display = 'block';
    document.getElementById('fb-alert-btn').onclick = function() {
       document.getElementById('fb-modal-overlay').style.display = 'none';
       document.body.style.overflow = '';
@@ -89,7 +89,7 @@ window.fbConfirm = function(msg, onYes, onNo) {
               '<button class="primary-button" id="fb-confirm-yes">Proceed</button></div>';
    document.getElementById('fb-modal-content').innerHTML = html;
    document.body.style.overflow = 'hidden';
-   document.getElementById('fb-modal-overlay').style.display = 'flex';
+   document.getElementById('fb-modal-overlay').style.display = 'block';
    
    document.getElementById('fb-confirm-no').onclick = function() {
       document.getElementById('fb-modal-overlay').style.display = 'none';
@@ -748,7 +748,7 @@ window.fbReviewAndSave = function(houseNo) {
      
      document.getElementById('fb-modal-content').innerHTML = html;
      document.body.style.overflow = 'hidden';
-     document.getElementById('fb-modal-overlay').style.display = 'flex';
+     document.getElementById('fb-modal-overlay').style.display = 'block';
   } else {
      fbShowReviewModal(houseNo, []);
   }
@@ -876,7 +876,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
     
   document.getElementById('fb-modal-content').innerHTML = html;
   document.body.style.overflow = 'hidden';
-  document.getElementById('fb-modal-overlay').style.display = 'flex';
+  document.getElementById('fb-modal-overlay').style.display = 'block';
 };
 
 window.fbConfirmSaveData = function(houseNo) {
