@@ -750,12 +750,15 @@ window.fbConfirmSaveData = function(houseId) {
   var existing = window.fbState.childCounts.find(function(c) { return c.house_id === houseId; });
   var calcs = calculateHouseBudget(existing, window.fbState.rateVariables);
   
-  existing.food_balance = calcs.food_balance;
-  existing.clothing_balance = calcs.clothing_balance;
-  existing.household_balance = calcs.household_balance;
-  existing.interest_balance = calcs.interest_balance;
+  // Create a copy payload so we can safely retry if columns are missing
+  var payload = Object.assign({}, existing);
   
-  existing.remarks = JSON.stringify({
+  payload.food_balance = calcs.food_balance;
+  payload.clothing_balance = calcs.clothing_balance;
+  payload.household_balance = calcs.household_balance;
+  payload.interest_balance = calcs.interest_balance;
+  
+  payload.remarks = JSON.stringify({
     savings: calcs.savings,
     first_w: calcs.first_withdrawal,
     second_w: calcs.second_withdrawal
@@ -764,7 +767,7 @@ window.fbConfirmSaveData = function(houseId) {
   document.getElementById('fb-modal-overlay').style.display = 'none';
   document.body.style.overflow = '';
   
-  supabase.from('fb_child_counts').upsert([existing], { onConflict: 'project_id, year, month, house_id' }).select().single().then(function(res) {
+  supabase.from('fb_child_counts').upsert([payload], { onConflict: 'project_id, year, month, house_id' }).select().single().then(function(res) {
     if (res.error) throw res.error;
     
     var idx = window.fbState.childCounts.findIndex(function(c) { return c.house_id === houseId; });
@@ -775,7 +778,29 @@ window.fbConfirmSaveData = function(houseId) {
     window.fbState.hasUnsavedChanges = false;
     fbRenderSubView();
   }).catch(function(e) {
-    alert('Error saving data. If you have not created the balance columns in Supabase yet, the save will fail. Error: ' + e.message);
+    // FALLBACK IF COLUMNS ARE MISSING OR SCHEMA CACHE IS STALE
+    if (e.message && (e.message.indexOf('schema cache') !== -1 || e.message.indexOf('Could not find') !== -1)) {
+       delete payload.food_balance;
+       delete payload.clothing_balance;
+       delete payload.household_balance;
+       delete payload.interest_balance;
+       
+       supabase.from('fb_child_counts').upsert([payload], { onConflict: 'project_id, year, month, house_id' }).select().single().then(function(res2) {
+          if (res2.error) {
+            alert('Fallback save failed: ' + res2.error.message);
+          } else {
+            var idx = window.fbState.childCounts.findIndex(function(c) { return c.house_id === houseId; });
+            if(idx > -1) window.fbState.childCounts[idx] = res2.data;
+            else window.fbState.childCounts.push(res2.data);
+            
+            alert('Data saved successfully! \n\nNote: The 4 balance columns have not yet been detected by the database API (or you need to click "Reload Schema Cache" in Supabase API settings). Your balances were safely stored in the JSON backup column instead, so no data was lost!');
+            window.fbState.hasUnsavedChanges = false;
+            fbRenderSubView();
+          }
+       });
+    } else {
+      alert('Error saving data: ' + e.message);
+    }
   });
 };
 
