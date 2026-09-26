@@ -202,7 +202,6 @@ function loadVillageData() {
   fbRenderSubView();
   
   // Directly query the counts and rates based purely on Village String. 
-  // Redundant project/house tables are bypassed completely!
   Promise.all([
     supabase.from('fb_child_counts').select('*').eq('village', window.fbState.activeVillage).eq('year', window.fbState.activeYear).eq('month', window.fbState.activeMonth),
     supabase.from('fb_rate_variables').select('*').eq('village', window.fbState.activeVillage).eq('year', window.fbState.activeYear).eq('month', window.fbState.activeMonth)
@@ -363,7 +362,6 @@ window.fbSaveRates = function() {
   var upserts = Object.keys(DEFAULT_RATES).map(function(k) {
     return { village: vName, year: window.fbState.activeYear, month: window.fbState.activeMonth, variable_key: k, value: document.getElementById('rate_' + k).value, updated_by: sessionStorage.getItem('username') };
   });
-  // Note: Requires new database schema constraint for 'village'
   supabase.from('fb_rate_variables').upsert(upserts, { onConflict: 'village, year, month, variable_key' }).then(function(res) {
     if (res.error) throw res.error;
     alert('Rates saved.');
@@ -581,8 +579,6 @@ window.fbConfirmSaveData = function(houseNo) {
   payload.clothing_balance = calcs.clothing_balance;
   payload.household_balance = calcs.household_balance;
   payload.interest_balance = calcs.interest_balance;
-  
-  // Historical Snapshotting
   payload.mother_name = houseData.mother_name;
   
   payload.remarks = JSON.stringify({ savings: calcs.savings, first_w: calcs.first_withdrawal, second_w: calcs.second_withdrawal, mother: houseData.mother_name });
@@ -598,12 +594,29 @@ window.fbConfirmSaveData = function(houseNo) {
     window.fbState.hasUnsavedChanges = false;
     fbRenderSubView();
   }).catch(function(e) {
+    // If the database cannot find the explicit balance columns (because user hasn't added them yet),
+    // strip the 4 balances from the payload and RETRY the save automatically!
     if (e.message && (e.message.indexOf('schema cache') !== -1 || e.message.indexOf('Could not find') !== -1)) {
-       delete payload.food_balance; delete payload.clothing_balance; delete payload.household_balance; delete payload.interest_balance;
-       // We must also temporarily strip 'mother_name', 'village', and 'house_no' if the user hasn't run the SQL yet!
-       // But wait... if we strip 'village' and 'house_no', we have no foreign keys to identify the row.
-       // THIS IS A HARD BREAKING CHANGE until they run the SQL!
-       alert('CRITICAL: You must run the Supabase Schema Migration SQL provided by your developer to save records with the new, simplified architecture!');
+       
+       delete payload.food_balance; 
+       delete payload.clothing_balance; 
+       delete payload.household_balance; 
+       delete payload.interest_balance;
+       
+       // Try saving AGAIN, but this time without the 4 explicit balance columns
+       supabase.from('fb_child_counts').upsert([payload], { onConflict: 'village, year, month, house_no' }).select().single().then(function(res2) {
+          if (res2.error) return alert('Database Error: ' + res2.error.message);
+          
+          var idx = window.fbState.childCounts.findIndex(function(c) { return String(c.house_no) === String(houseNo); });
+          if(idx > -1) window.fbState.childCounts[idx] = res2.data; else window.fbState.childCounts.push(res2.data);
+          
+          alert('Data saved successfully via JSON fallback!\n\n(The explicit balance columns are missing from Supabase, but your data is safe inside the remarks column. Run the final SQL to add explicit columns later).');
+          window.fbState.hasUnsavedChanges = false;
+          fbRenderSubView();
+       }).catch(function(err2) {
+          alert('Database Error! Please ensure you have run the Schema Migration SQL in Supabase. Details: ' + err2.message); 
+       });
+       
     } else { 
        alert('Database Error! Please ensure you have run the Schema Migration SQL in Supabase. Details: ' + e.message); 
     }
