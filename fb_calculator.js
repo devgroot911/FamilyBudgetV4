@@ -413,14 +413,14 @@ function fbRenderEntry(container) {
       '<tr>' +
         '<td><strong>' + h.house_no + '</strong></td>' +
         '<td>' + motherName + '</td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'food_o12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'food_u12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'clothing_o12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'clothing_u12', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.household || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'household', this.value)" /></td>' +
-        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'mother_count', this.value)" /></td>' +
-        '<td><input type="number" min="0" step="100" style="width:70px; padding:4px;" value="' + (counts.aunt_amount || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'aunt_amount', this.value)" /></td>' +
-        '<td><input type="number" step="100" style="width:70px; padding:4px;" value="' + (counts.adjustment || 0) + '" onchange="fbUpdateCount('' + h.id + '', 'adjustment', this.value)" placeholder="Adj." title="Adjustments/Arrears/Festival" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'food_o12', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'food_u12', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'clothing_o12', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_u12 || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'clothing_u12', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.household || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'household', this.value)" /></td>' +
+        '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.mother_count || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'mother_count', this.value)" /></td>' +
+        '<td><input type="number" min="0" step="100" style="width:70px; padding:4px;" value="' + (counts.aunt_amount || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'aunt_amount', this.value)" /></td>' +
+        '<td><input type="number" step="100" style="width:70px; padding:4px;" value="' + (counts.adjustment || 0) + '" onchange="fbUpdateCount('\'' + h.id + '\'', 'adjustment', this.value)" placeholder="Adj." title="Adjustments/Arrears/Festival" /></td>' +
         '<td style="background:#f4f9fb; font-weight:bold;">' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
         '<td style="background:#f4f9fb; font-weight:bold; color:#1F5C3A">' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>' +
       '</tr>';
