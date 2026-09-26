@@ -586,12 +586,23 @@ window.fbReviewAndSave = function(houseNo) {
                 '<p style="margin-top:0;">Your requested actual withdrawals exceed the available monthly allocation and the previous rollover balance.</p>';
                 
      overdrafts.forEach(function(od) {
+        // Smart Dropdowns: Disable options if covering field doesn't have enough funds!
+        var foodDisabled = calcs.food_balance < od.amount ? 'disabled' : '';
+        var foodLabel = calcs.food_balance < od.amount 
+            ? 'Cover from Food (Insufficient: ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')' 
+            : 'Cover from Food (Avail: ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
+            
+        var intDisabled = calcs.interest_balance < od.amount ? 'disabled' : '';
+        var intLabel = calcs.interest_balance < od.amount 
+            ? 'Cover from Interest (Insufficient: ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')' 
+            : 'Cover from Interest (Avail: ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
+            
         html += '<div class="fb-box" style="margin-bottom:10px;">' +
                 '<label class="fb-label">' + od.label + ' Overdraft: LKR ' + od.amount.toLocaleString(undefined, {minimumFractionDigits:2}) + '</label>' +
                 '<select id="od_resolve_' + od.field + '" class="form-control">' +
                    '<option value="none">Keep Negative Balance (Carry Forward)</option>' +
-                   '<option value="food_balance">Cover from Food Balance</option>' +
-                   '<option value="interest_balance">Cover from Interest Balance</option>' +
+                   '<option value="food_balance" ' + foodDisabled + '>' + foodLabel + '</option>' +
+                   '<option value="interest_balance" ' + intDisabled + '>' + intLabel + '</option>' +
                 '</select></div>';
      });
      html += '</div><div class="fb-modal-footer">' +
@@ -608,13 +619,32 @@ window.fbReviewAndSave = function(houseNo) {
 };
 
 window.fbApplyOverdrafts = function(houseNo) {
+   var existing = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(houseNo); });
+   var prev = getPreviousBalances(houseNo, window.fbState.activeYear, window.fbState.activeMonth);
+   var calcs = calculateHouseBudget(existing, window.fbState.rateVariables, prev);
+   
    var transfers = [];
+   var foodDeduction = 0;
+   var intDeduction = 0;
+   
    ['clothing_balance', 'household_balance'].forEach(function(f) {
       var sel = document.getElementById('od_resolve_' + f);
       if (sel && sel.value !== 'none') {
-         transfers.push({ to: f, from: sel.value });
+         var amt = Math.abs(calcs[f]);
+         if (sel.value === 'food_balance') foodDeduction += amt;
+         if (sel.value === 'interest_balance') intDeduction += amt;
+         transfers.push({ to: f, from: sel.value, amount: amt });
       }
    });
+   
+   // Double check for multiple-field double-dipping
+   if (foodDeduction > calcs.food_balance) {
+      return alert("Cannot apply transfers! Food Balance does not have enough funds to cover all requested deductions. Please select 'Keep Negative' for one of the fields.");
+   }
+   if (intDeduction > calcs.interest_balance) {
+       return alert("Cannot apply transfers! Interest Balance does not have enough funds to cover all requested deductions. Please select 'Keep Negative' for one of the fields.");
+   }
+   
    fbShowReviewModal(houseNo, transfers);
 };
 
@@ -626,12 +656,11 @@ window.fbShowReviewModal = function(houseNo, transfers) {
   
   var transferLog = [];
   transfers.forEach(function(t) {
-     var amt = Math.abs(calcs[t.to]);
-     calcs[t.to] += amt; // Resolve negative
-     calcs[t.from] -= amt; // Deduct from source
+     calcs[t.to] += t.amount; // Resolve negative
+     calcs[t.from] -= t.amount; // Deduct from source
      var cleanTo = t.to.replace('_balance', '');
      var cleanFrom = t.from.replace('_balance', '');
-     transferLog.push("Transferred LKR " + amt + " from " + cleanFrom + " to " + cleanTo);
+     transferLog.push("Transferred LKR " + t.amount + " from " + cleanFrom + " to " + cleanTo);
   });
   
   // Store resolved math on global object to pass to save function
