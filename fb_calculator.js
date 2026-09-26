@@ -704,10 +704,10 @@ window.fbApplyOverdrafts = function(houseNo) {
    });
    
    var warnings = [];
-   if (deductions.food_balance > calcs.food_balance) warnings.push("The requested transfers will push the Food Balance into the negative.");
-   if (deductions.interest_balance > calcs.interest_balance) warnings.push("The requested transfers will push the Interest Balance into the negative.");
-   if (deductions.household_balance > calcs.household_balance) warnings.push("The requested transfers will push the Household Balance into the negative.");
-   if (deductions.clothing_balance > calcs.clothing_balance) warnings.push("The requested transfers will push the Clothing Balance into the negative.");
+   if (deductions.food_balance > 0 && deductions.food_balance > calcs.food_balance) warnings.push("The requested transfers will push the Food Balance into the negative.");
+   if (deductions.interest_balance > 0 && deductions.interest_balance > calcs.interest_balance) warnings.push("The requested transfers will push the Interest Balance into the negative.");
+   if (deductions.household_balance > 0 && deductions.household_balance > calcs.household_balance) warnings.push("The requested transfers will push the Household Balance into the negative.");
+   if (deductions.clothing_balance > 0 && deductions.clothing_balance > calcs.clothing_balance) warnings.push("The requested transfers will push the Clothing Balance into the negative.");
    
    if (warnings.length > 0) {
       fbConfirm(warnings.join("\n") + "\n\nDo you want to proceed and carry these negative balances forward?", function() {
