@@ -1929,7 +1929,9 @@ function generateExcelReport(username, month) {
     
     var summaryCatKeys = Object.keys(cat1Totals).concat(Object.keys(cat1Allowances));
     summaryCatKeys = summaryCatKeys.filter(function(item, pos) { return summaryCatKeys.indexOf(item) === pos; });
-    summaryCatKeys = summaryCatKeys.filter(function(k) { return cat1Allowances[k] > 0 || cat1Totals[k] > 0; }).sort();
+    summaryCatKeys = summaryCatKeys.filter(function(k) { 
+        return cat1Allowances[k] > 0 || cat1Totals[k] > 0 || ['Food', 'Household', 'Clothing'].indexOf(k) !== -1; 
+    }).sort();
 
     // --- SHEET 1: Expense Records ---
     var ws1Data = [], ws1Merges = [], ws1Rows = [];
