@@ -994,6 +994,7 @@ function renderRecords() {
 }
 
 window.selectedAllowanceHouse = window.selectedAllowanceHouse || 'ALL';
+window.selectedAllowanceVillage = window.selectedAllowanceVillage || 'ALL';
 
 function renderAllowances() {
   var cm = selectedAllowanceMonth;
@@ -1003,13 +1004,31 @@ function renderAllowances() {
   var myVillage = sessionStorage.getItem('village') || '';
   
   var houseSelectorHtml = '';
+  var villageSelectorHtml = '';
+  
+  var activeVill = isGlobal ? window.selectedAllowanceVillage : myVillage;
+  
   if (!isMother) {
+      var allRows = window.appState && window.appState.fbAllocations ? window.appState.fbAllocations : [];
+      
+      if (isGlobal) {
+          var availableVillages = [];
+          allRows.forEach(function(r) {
+             if (r.village && availableVillages.indexOf(r.village) === -1) availableVillages.push(r.village);
+          });
+          availableVillages.sort();
+          villageSelectorHtml = '<div class="field"><label for="allowance-village">Select Project (Village)</label><select id="allowance-village">' +
+                              '<option value="ALL"' + (window.selectedAllowanceVillage === 'ALL' ? ' selected' : '') + '>All Villages (National Aggregate)</option>' +
+                              availableVillages.map(function(v) {
+                                  return '<option value="' + v + '"' + (window.selectedAllowanceVillage == v ? ' selected' : '') + '>' + v + '</option>';
+                              }).join('') +
+                              '</select></div>';
+      }
+      
       var availableHouses = [];
-      Object.keys(window.state.profiles || {}).forEach(function(u) {
-          var p = window.state.profiles[u];
-          var v = p.village || '';
-          if (!isGlobal && myVillage && v.toLowerCase() !== myVillage.toLowerCase()) return;
-          if (p.house && availableHouses.indexOf(p.house) === -1) availableHouses.push(p.house);
+      allRows.forEach(function(r) {
+          if (activeVill !== 'ALL' && activeVill !== '' && r.village !== activeVill) return;
+          if (r.house_no && availableHouses.indexOf(r.house_no) === -1) availableHouses.push(r.house_no);
       });
       availableHouses.sort(function(a,b){return parseInt(a)-parseInt(b);});
       
@@ -1021,15 +1040,16 @@ function renderAllowances() {
                           '</select></div>';
   }
   
-  var targetVillage = isGlobal ? 'ALL' : myVillage;
+  var targetVillage = activeVill;
   var targetHouse = isMother ? sessionStorage.getItem('house') : window.selectedAllowanceHouse;
   
   var html = '<div class="grid two-col">' +
       '<div class="panel">' +
         '<div class="section-heading"><div><h2>Family Budget Overview</h2><small>Calculated allowances for ' + cm + '</small></div></div>' +
-        '<div style="margin-bottom: 20px; display:flex; gap:15px;">' +
-          '<div class="field" style="flex:1;"><label for="allowance-month">View Month</label><input id="allowance-month" type="month" value="' + cm + '"></div>' +
-          (houseSelectorHtml ? '<div style="flex:1;">' + houseSelectorHtml + '</div>' : '') +
+        '<div style="margin-bottom: 20px; display:flex; gap:15px; flex-wrap:wrap;">' +
+          '<div class="field" style="flex:1; min-width:120px;"><label for="allowance-month">View Month</label><input id="allowance-month" type="month" value="' + cm + '"></div>' +
+          (villageSelectorHtml ? '<div style="flex:1; min-width:150px;">' + villageSelectorHtml + '</div>' : '') +
+          (houseSelectorHtml ? '<div style="flex:1; min-width:150px;">' + houseSelectorHtml + '</div>' : '') +
         '</div>' +
         '<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">' +
            '<h4 style="margin-top:0; color:#2c3e50;">Monthly Allocations</h4>';
@@ -1071,10 +1091,21 @@ function renderAllowances() {
   });
   
   if (!isMother) {
-      document.querySelector('#allowance-house').addEventListener('change', function(event) {
-        window.selectedAllowanceHouse = event.target.value;
-        renderAllowances();
-      });
+      var vSel = document.querySelector('#allowance-village');
+      if (vSel) {
+          vSel.addEventListener('change', function(event) {
+              window.selectedAllowanceVillage = event.target.value;
+              window.selectedAllowanceHouse = 'ALL'; // Reset house when changing village
+              renderAllowances();
+          });
+      }
+      var hSel = document.querySelector('#allowance-house');
+      if (hSel) {
+          hSel.addEventListener('change', function(event) {
+            window.selectedAllowanceHouse = event.target.value;
+            renderAllowances();
+          });
+      }
   }
 }
 
