@@ -1525,6 +1525,8 @@ document.querySelector('#login-form').addEventListener('submit', function(event)
       sessionStorage.setItem('username', validUser.username);
       sessionStorage.setItem('role', validUser.role);
       sessionStorage.setItem('profile_name', validUser.name);
+      sessionStorage.setItem('village', validUser.village || '');
+      sessionStorage.setItem('house', validUser.house || '');
       if (typeof fetchNotifications === 'function') fetchNotifications();
       if (!state.profiles) state.profiles = {};
       var ruType = validUser.usertype;
@@ -1973,11 +1975,12 @@ function fetchNotifications() {
   
   if (!isGlobal) {
     if (isVillageDirector) {
+      // Village Directors see everything in their village, plus Global and Direct
       query = query.or('target_village.eq.' + myVillage + ',target_village.eq.ALL,target_user.eq.' + username);
     } else {
-      // Mother / YCCW
-      var houseQuery = myHouse ? 'target_user.eq.HOUSE:' + myHouse : 'target_user.eq.NONE';
-      query = query.or(houseQuery + ',target_village.eq.ALL,target_user.eq.' + username);
+      // Mother / YCCW see only their House IN their Village, plus Global and Direct
+      var hq = myHouse ? 'target_user.eq.HOUSE:' + myHouse : 'target_user.eq.NONE';
+      query = query.or('target_village.eq.ALL,target_user.eq.' + username + ',and(target_village.eq.' + myVillage + ',' + hq + ')');
     }
   }
   
