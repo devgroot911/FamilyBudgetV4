@@ -177,19 +177,28 @@ function loadProjectData() {
     
     if (window.state && window.state.profiles) {
       var projectName = window.fbState.activeProject.name;
+      
       var villageMothers = Object.keys(window.state.profiles).filter(function(uname) {
         var p = window.state.profiles[uname];
         var isMother = (p.role && p.role.toLowerCase() === 'mother') || (p.usertype && p.usertype.toLowerCase().indexOf('mother') !== -1);
         return isMother && p.village && projectName.toLowerCase().indexOf(p.village.toLowerCase()) !== -1;
       });
       
-      var missingMothers = villageMothers.filter(function(uname) {
-        return !window.fbState.houses.find(function(h) { return h.mother_username === uname; });
+      var neededHouses = [];
+      villageMothers.forEach(function(uname) {
+        var houseNum = window.state.profiles[uname].house;
+        if (houseNum && neededHouses.indexOf(houseNum) === -1) {
+          neededHouses.push(houseNum);
+        }
       });
       
-      if (missingMothers.length > 0) {
-        var newHouses = missingMothers.map(function(uname, idx) {
-          return { project_id: pid, house_no: 'Auto-' + uname, mother_username: uname };
+      var missingHouses = neededHouses.filter(function(hNum) {
+        return !window.fbState.houses.find(function(h) { return h.house_no === String(hNum); });
+      });
+      
+      if (missingHouses.length > 0) {
+        var newHouses = missingHouses.map(function(hNum) {
+          return { project_id: pid, house_no: String(hNum) };
         });
         return supabase.from('fb_houses').insert(newHouses).then(function() {
           return supabase.from('fb_houses').select('*').eq('project_id', pid);
