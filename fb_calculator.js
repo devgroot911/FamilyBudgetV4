@@ -274,8 +274,12 @@ window.fbUpdateLocalCount = function(houseNo, field, val) {
 window.fbChangePeriod = function() {
   var proceed = function() {
       window.fbState.hasUnsavedChanges = false;
-      window.fbState.activeMonth = parseInt(document.getElementById('fb-sel-month').value);
-      window.fbState.activeYear = parseInt(document.getElementById('fb-sel-year').value);
+      var val = document.getElementById('fb-sel-period').value;
+      if (val) {
+         var parts = val.split('-');
+         window.fbState.activeYear = parseInt(parts[0]);
+         window.fbState.activeMonth = parseInt(parts[1]);
+      }
       loadFbData();
   };
   if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
@@ -366,19 +370,15 @@ window.renderFbCalculator = function() {
   
   var m = window.fbState.activeMonth;
   var y = window.fbState.activeYear;
-  var monthOptions = [1,2,3,4,5,6,7,8,9,10,11,12].map(function(x) { return '<option value="'+x+'" '+(x===m?'selected':'')+'>Month '+x+'</option>'; }).join('');
+  // removed monthOptions
   
   document.querySelector('#view-fb-calculator').innerHTML = 
     '<div class="fb-layout">' +
       '<div class="fb-sidebar panel" style="padding:15px;">' +
         '<h3 style="margin-top:0; margin-bottom:15px; font-size:16px;">Family Budget</h3>' +
         '<div style="margin-bottom:15px; display:flex; flex-direction:column; gap:8px;">' +
-          '<label class="fb-label">Month</label>' +
-          '<select id="fb-sel-month" onchange="fbChangePeriod()" class="form-control fb-compact-input">' + monthOptions + '</select>' +
-          '<label class="fb-label">Year</label>' +
-          '<select id="fb-sel-year" onchange="fbChangePeriod()" class="form-control fb-compact-input">' +
-            '<option value="2024" '+(y===2024?'selected':'')+'>2024</option><option value="2025" '+(y===2025?'selected':'')+'>2025</option><option value="2026" '+(y===2026?'selected':'')+'>2026</option>' +
-          '</select>' +
+          '<label class="fb-label">Budget Month</label>' +
+          '<input type="month" id="fb-sel-period" onchange="fbChangePeriod()" class="form-control fb-compact-input" value="'+y+'-'+String(m).padStart(2, '0')+'">' +
         '</div><hr style="margin:15px 0; border:0; border-top:1px solid #eee;">' +
         '<button class="fb-nav-btn" data-subview="villages">Villages</button>' +
         '<button class="fb-nav-btn" data-subview="dashboard" id="fb-nav-dashboard" style="display:none">Dashboard</button>' +
