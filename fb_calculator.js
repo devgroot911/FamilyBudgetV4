@@ -73,6 +73,7 @@ function calculateHouseBudget(houseCounts, rates) {
 function getFbRole() {
   var role = (sessionStorage.getItem('role') || '').toLowerCase();
   if (role.indexOf('admin') !== -1) return 'admin';
+  if (role.indexOf('director') !== -1) return 'director';
   if (role.indexOf('national') !== -1) return 'national';
   if (role.indexOf('accountant') !== -1) return 'accountant';
   if (role.indexOf('assistant') !== -1) return 'assistant';
@@ -81,7 +82,7 @@ function getFbRole() {
 
 function canAccessFb() {
   var r = getFbRole();
-  return r === 'admin' || r === 'national' || r === 'accountant' || r === 'assistant';
+  return r === 'admin' || r === 'director' || r === 'national' || r === 'accountant' || r === 'assistant';
 }
 
 function logAudit(action, projectId, details) {
@@ -339,6 +340,9 @@ function fbRenderRates(container) {
     return DEFAULT_RATES[k];
   };
   
+  var r = getFbRole();
+  var isDirectorOrAdmin = r === 'director' || r === 'admin';
+  
   var html = 
     '<div class="panel">' +
       '<div class="section-heading"><div><h2>Rate Variables</h2><small>For ' + window.fbState.activeYear + '/' + window.fbState.activeMonth + '</small></div></div>' +
@@ -347,9 +351,11 @@ function fbRenderRates(container) {
           '<thead><tr><th>Variable</th><th>Value</th></tr></thead>' +
           '<tbody>' +
             Object.keys(DEFAULT_RATES).map(function(k) {
+              var isPct = k.indexOf('_pct') !== -1;
+              var disabled = (isPct && !isDirectorOrAdmin) ? 'disabled title="Only Finance Director can edit percentages"' : '';
               return '<tr>' +
                 '<td><strong>' + k + '</strong></td>' +
-                '<td><input type="number" step="0.0001" value="' + getRate(k) + '" id="rate_' + k + '" class="fb-rate-input" /></td>' +
+                '<td><input type="number" step="0.0001" value="' + getRate(k) + '" id="rate_' + k + '" class="fb-rate-input" ' + disabled + ' /></td>' +
               '</tr>';
             }).join('') +
           '</tbody>' +
