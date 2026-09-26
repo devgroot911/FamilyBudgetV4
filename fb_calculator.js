@@ -1223,18 +1223,17 @@ window.fbConfirmBulkSave = function() {
   // Clean payloads of calculated balance properties that do not exist in the DB schema
   // and remove 'id' and 'created_at' to prevent PostgREST bulk upsert null constraint errors
   var cleanPayloads = window.fbPendingBulkPayloads.map(function(p) {
-    var clean = Object.assign({
-      open_food: null,
-      open_cloth: null,
-      open_hh: null,
-      open_int: null
-    }, p);
+    var clean = Object.assign({}, p);
     delete clean.id;
     delete clean.created_at;
     delete clean.food_balance;
     delete clean.clothing_balance;
     delete clean.household_balance;
     delete clean.interest_balance;
+    delete clean.open_food;
+    delete clean.open_cloth;
+    delete clean.open_hh;
+    delete clean.open_int;
     return clean;
   });
   
