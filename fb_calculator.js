@@ -1221,11 +1221,31 @@ window.fbConfirmBulkSave = function() {
   
   fbAlert('Saving ' + window.fbPendingBulkPayloads.length + ' records to cloud...');
   
-  supabase.from('fb_child_counts').upsert(window.fbPendingBulkPayloads, { onConflict: 'village, year, month, house_no' })
+  // Clean payloads of calculated balance properties that do not exist in the DB schema
+  var cleanPayloads = window.fbPendingBulkPayloads.map(function(p) {
+    var clean = Object.assign({}, p);
+    delete clean.food_balance;
+    delete clean.clothing_balance;
+    delete clean.household_balance;
+    delete clean.interest_balance;
+    return clean;
+  });
+  
+  supabase.from('fb_child_counts').upsert(cleanPayloads, { onConflict: 'village, year, month, house_no' }).select()
     .then(function(res) {
       if (res.error) throw res.error;
+      
+      // Update local state to immediately reflect the newly imported rows
+      (res.data || []).forEach(function(row) {
+          var idx = window.fbState.childCounts.findIndex(function(c) { return String(c.house_no) === String(row.house_no); });
+          if(idx > -1) window.fbState.childCounts[idx] = row; else window.fbState.childCounts.push(row);
+          
+          var hIdx = window.fbState.historicalCounts.findIndex(function(c) { return String(c.house_no) === String(row.house_no) && c.year === row.year && c.month === row.month; });
+          if(hIdx > -1) window.fbState.historicalCounts[hIdx] = row; else window.fbState.historicalCounts.push(row);
+      });
+      
       fbAlert('Bulk Import Successful! Saved ' + window.fbPendingBulkPayloads.length + ' records.');
-      loadFbData();
+      loadFbData(); // triggers re-render of entry tables
     })
     .catch(function(err) {
       fbAlert('Error saving bulk data: ' + err.message);
