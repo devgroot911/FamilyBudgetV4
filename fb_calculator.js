@@ -105,7 +105,6 @@ function loadFbData() {
   var myProfile = (window.state && window.state.profiles) ? window.state.profiles[username] : null;
   var myVillage = myProfile ? myProfile.village : 'All';
   
-  // Extract unique villages from profiles (excluding 'All')
   var uniqueVillages = [];
   if (window.state && window.state.profiles) {
     Object.keys(window.state.profiles).forEach(function(k) {
@@ -120,7 +119,6 @@ function loadFbData() {
     if (res.error) throw res.error;
     var existingProjects = res.data || [];
     
-    // Auto-create projects for new villages
     var missing = uniqueVillages.filter(function(v) {
       return !existingProjects.find(function(p) { return p.name.toLowerCase() === v.toLowerCase(); });
     });
@@ -136,8 +134,7 @@ function loadFbData() {
   }).then(function(res) {
     var projects = res.data || [];
     
-    // Assign access based on Village == Project Name
-    if (myVillage.toLowerCase() === 'all' || role === 'admin' || role === 'national') {
+    if (myVillage.toLowerCase() === 'all' || role === 'admin' || role === 'director' || role === 'national') {
       window.fbState.myProjects = projects;
     } else {
       window.fbState.myProjects = projects.filter(function(p) { 
@@ -193,7 +190,7 @@ function loadProjectData() {
       });
       
       var missingHouses = neededHouses.filter(function(hNum) {
-        return !window.fbState.houses.find(function(h) { return h.house_no === String(hNum); });
+        return !window.fbState.houses.find(function(h) { return String(h.house_no) === String(hNum); });
       });
       
       if (missingHouses.length > 0) {
@@ -403,29 +400,19 @@ window.fbSaveRates = function() {
   });
 };
 
-
 function fbRenderEntry(container) {
   var p = window.fbState.activeProject;
   if (!p) return;
   
-  // Get mothers in this village for the dropdown
-  var projectName = p.name;
-  var villageMothers = [];
-  if (window.state && window.state.profiles) {
-    villageMothers = Object.keys(window.state.profiles).filter(function(uname) {
-      var prof = window.state.profiles[uname];
-      var isMother = (prof.role && prof.role.toLowerCase() === 'mother') || (prof.usertype && prof.usertype.toLowerCase().indexOf('mother') !== -1);
-      return isMother && prof.village && projectName.toLowerCase().indexOf(prof.village.toLowerCase()) !== -1;
-    });
-  }
+  var pName = p.name;
   
   var html = 
     '<div class="panel" style="margin-bottom: 20px;">' +
       '<div class="section-heading" style="display:flex; justify-content:space-between; align-items:center;">' +
-        '<div><h2>Data Entry</h2><small>Enter monthly allocations or import from Excel</small></div>' +
+        '<div><h2>Data Entry</h2><small>House assignments are strictly linked to the Manage Users table</small></div>' +
         '<div style="display:flex; gap:10px;">' +
           '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Template</button>' +
-          '<label class="primary-button" style="cursor:pointer; margin:0; display:flex; align-items:center;">&#11014; Upload Excel<input type="file" id="fb-excel-upload" accept=".xlsx, .xls" style="display:none" onchange="fbHandleExcelUpload(event)"></label>' +
+          '<label class="primary-button" style="cursor:pointer; margin:0; display:flex; align-items:center; padding: 6px 12px;">&#11014; Upload Excel<input type="file" id="fb-excel-upload" accept=".xlsx, .xls" style="display:none" onchange="fbHandleExcelUpload(event)"></label>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -455,24 +442,26 @@ function fbRenderEntry(container) {
     var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
     
-    var motherSelect = '<select onchange="fbUpdateHouseMother(\'' + h.id + '\', this.value)" style="width:120px; padding:4px;">';
-    motherSelect += '<option value="">-- Unassigned --</option>';
-    villageMothers.forEach(function(uname) {
-      var prof = window.state.profiles[uname];
-      var selected = (h.mother_username === uname) ? 'selected' : '';
-      motherSelect += '<option value="' + uname + '" ' + selected + '>' + prof.name + '</option>';
-    });
-    // Fallback if current mother isn't in village
-    if (h.mother_username && villageMothers.indexOf(h.mother_username) === -1) {
-      var extraName = (window.state && window.state.profiles && window.state.profiles[h.mother_username]) ? window.state.profiles[h.mother_username].name : h.mother_username;
-      motherSelect += '<option value="' + h.mother_username + '" selected>' + extraName + ' (Other)</option>';
+    var currentMotherName = 'Unassigned';
+    var currentMotherUsername = '';
+    
+    if (window.state && window.state.profiles) {
+      Object.keys(window.state.profiles).forEach(function(uname) {
+        var prof = window.state.profiles[uname];
+        if (prof.village && prof.village.toLowerCase() === pName.toLowerCase() && String(prof.house) === String(h.house_no)) {
+          var isMother = (prof.role && prof.role.toLowerCase() === 'mother') || (prof.usertype && prof.usertype.toLowerCase().indexOf('mother') !== -1);
+          if (isMother) {
+            currentMotherName = prof.name;
+            currentMotherUsername = uname;
+          }
+        }
+      });
     }
-    motherSelect += '</select>';
     
     html += 
       '<tr>' +
-        '<td><input type="text" style="width:70px; padding:4px;" value="' + h.house_no + '" onchange="fbUpdateHouse(\'' + h.id + '\', this.value)" /></td>' +
-        '<td>' + motherSelect + '</td>' +
+        '<td><strong>' + h.house_no + '</strong></td>' +
+        '<td>' + currentMotherName + '<br><small style="color:#888">' + (currentMotherUsername ? '(' + currentMotherUsername + ')' : 'Edit in Manage Users') + '</small></td>' +
         '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_o12\', this.value)" /></td>' +
         '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.food_u12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'food_u12\', this.value)" /></td>' +
         '<td><input type="number" min="0" style="width:50px; padding:4px;" value="' + (counts.clothing_o12 || 0) + '" onchange="fbUpdateCount(\'' + h.id + '\', \'clothing_o12\', this.value)" /></td>' +
@@ -494,27 +483,89 @@ function fbRenderEntry(container) {
   container.innerHTML = html;
 }
 
-
-window.fbUpdateHouseMother = function(houseId, val) {
-  supabase.from('fb_houses').update({ mother_username: val }).eq('id', houseId).then(function(res) {
-    if (res.error) throw res.error;
-    var h = window.fbState.houses.find(function(x) { return x.id === houseId; });
-    if(h) h.mother_username = val;
-    fbRenderSubView();
-  }).catch(function(e) {
-    alert('Error updating assigned mother: ' + e.message);
+window.fbDownloadTemplate = function() {
+  if (!window.XLSX) return alert('Excel library not loaded.');
+  var ws_data = [
+    ['House No', 'Mother', 'Food >12', 'Food <12', 'Clothing >12', 'Clothing <12', 'HH Count', 'Mother Count', 'Aunt Amt', 'Adjustments']
+  ];
+  
+  var pName = window.fbState.activeProject.name;
+  
+  window.fbState.houses.forEach(function(h) {
+    var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
+    
+    var currentMotherName = 'Unassigned';
+    if (window.state && window.state.profiles) {
+      Object.keys(window.state.profiles).forEach(function(uname) {
+        var prof = window.state.profiles[uname];
+        if (prof.village && prof.village.toLowerCase() === pName.toLowerCase() && String(prof.house) === String(h.house_no)) {
+          var isMother = (prof.role && prof.role.toLowerCase() === 'mother') || (prof.usertype && prof.usertype.toLowerCase().indexOf('mother') !== -1);
+          if (isMother) currentMotherName = prof.name;
+        }
+      });
+    }
+    
+    ws_data.push([
+      h.house_no, currentMotherName, 
+      counts.food_o12 || 0, counts.food_u12 || 0,
+      counts.clothing_o12 || 0, counts.clothing_u12 || 0,
+      counts.household || 0, counts.mother_count || 0,
+      counts.aunt_amount || 0, counts.adjustment || 0
+    ]);
   });
+  
+  var ws = XLSX.utils.aoa_to_sheet(ws_data);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Data Entry");
+  XLSX.writeFile(wb, window.fbState.activeProject.name + "_Template_" + window.fbState.activeYear + "_" + window.fbState.activeMonth + ".xlsx");
 };
 
-window.fbUpdateHouse = function(houseId, val) {
-  supabase.from('fb_houses').update({ house_no: val }).eq('id', houseId).then(function(res) {
-    if (res.error) throw res.error;
-    var h = window.fbState.houses.find(function(x) { return x.id === houseId; });
-    if(h) h.house_no = val;
-    fbRenderSubView();
-  }).catch(function(e) {
-    alert('Error updating house no: ' + e.message);
-  });
+window.fbHandleExcelUpload = function(event) {
+  var file = event.target.files[0];
+  if (!file || !window.XLSX) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data = new Uint8Array(e.target.result);
+    var workbook = XLSX.read(data, {type: 'array'});
+    var sheet = workbook.Sheets[workbook.SheetNames[0]];
+    var json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+    
+    var updates = [];
+    var pid = window.fbState.activeProject.id;
+    var y = window.fbState.activeYear;
+    var m = window.fbState.activeMonth;
+    
+    for (var i = 1; i < json.length; i++) {
+      var row = json[i];
+      if (!row || row.length < 1) continue;
+      var houseNo = String(row[0]);
+      var house = window.fbState.houses.find(function(h) { return String(h.house_no) === houseNo; });
+      if (house) {
+        updates.push({
+          project_id: pid, year: y, month: m, house_id: house.id,
+          food_o12: Number(row[2]) || 0, food_u12: Number(row[3]) || 0,
+          clothing_o12: Number(row[4]) || 0, clothing_u12: Number(row[5]) || 0,
+          household: Number(row[6]) || 0, mother_count: Number(row[7]) || 0,
+          aunt_amount: Number(row[8]) || 0, adjustment: Number(row[9]) || 0
+        });
+      }
+    }
+    
+    if (updates.length > 0) {
+      window.fbState.loading = true;
+      fbRenderSubView();
+      supabase.from('fb_child_counts').upsert(updates, { onConflict: 'project_id, year, month, house_id' }).then(function(res) {
+        if (res.error) throw res.error;
+        alert('Imported ' + updates.length + ' rows successfully!');
+        loadProjectData();
+      }).catch(function(err) {
+        window.fbState.loading = false;
+        fbRenderSubView();
+        alert('Upload failed: ' + err.message);
+      });
+    }
+  };
+  reader.readAsArrayBuffer(file);
 };
 
 window.fbUpdateCount = function(houseId, field, val) {
