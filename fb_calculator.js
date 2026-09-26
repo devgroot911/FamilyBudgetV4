@@ -741,10 +741,30 @@ window.fbShowReviewModal = function(houseNo, transfers) {
     '<div class="fb-modal-header">Review & Save: House ' + houseNo + '</div>' +
     '<div class="fb-modal-body">' +
       '<div class="fb-box" style="margin-bottom:15px; border-left:3px solid #f39c12;"><h4>Permanent Historical Snapshot</h4>' +
-        '<p style="font-size:13px; color:#555; margin:0;">Saving this will permanently lock <strong>' + houseData.mother_name + '</strong> as the Mother for this month\'s ledger. This protects historical records even if user profiles change later.</p>' +
+        '<p style="font-size:13px; color:#555; margin:0;">Saving this will permanently lock <strong>' + houseData.mother_name + '</strong> as the Mother for this month\'s ledger.</p>' +
       '</div>' +
       
-      '<div class="fb-box" style="margin-bottom:15px;"><h4>1. Base Math & Withdrawals</h4>' +
+      '<div class="fb-box" style="margin-bottom:15px; background:#f4f9f9; border-left:3px solid #16a085;"><h4>1. User Input Summary</h4>' +
+        '<div class="fb-grid-4" style="font-size:12px; color:#333;">' +
+          '<div><span class="fb-label">Children >12</span>' + (existing.food_o12||0) + '</div>' +
+          '<div><span class="fb-label">Children <12</span>' + (existing.food_u12||0) + '</div>' +
+          '<div><span class="fb-label">Mothers</span>' + (existing.mother_count||0) + '</div>' +
+          '<div><span class="fb-label">Aunt Amount</span>LKR ' + Number(existing.aunt_amount||0).toLocaleString() + '</div>' +
+          
+          '<div style="grid-column: span 4;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
+          
+          '<div><span class="fb-label">Actual Clothing</span>LKR ' + calcs.actual_clothing_w.toLocaleString() + '</div>' +
+          '<div><span class="fb-label">Actual Household</span>LKR ' + calcs.actual_household_w.toLocaleString() + '</div>' +
+          '<div><span class="fb-label">Interest Received</span>LKR ' + calcs.interest_earned.toLocaleString() + '</div>' +
+          '<div><span class="fb-label">Bank Charges</span>LKR ' + calcs.bank_charges.toLocaleString() + '</div>' +
+          
+          '<div style="grid-column: span 4;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
+          
+          '<div><span class="fb-label">Adjustments</span>LKR ' + Number(existing.adjustment||0).toLocaleString() + '</div>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="fb-box" style="margin-bottom:15px;"><h4>2. System Calculation & Withdrawals</h4>' +
         '<div class="fb-grid-4" style="margin-bottom:10px; font-size:12px; color:#666;">' +
           '<div><span class="fb-label">Prev Food</span>LKR ' + prev.food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Prev Cloth</span>LKR ' + prev.clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
@@ -753,10 +773,10 @@ window.fbShowReviewModal = function(houseNo, transfers) {
           
           '<div style="grid-column: span 4;"><hr style="border-top:1px solid #eee; margin:2px 0;"></div>' +
           
+          '<div><span class="fb-label">Food Alloc</span>LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+          '<div><span class="fb-label">Clothing Alloc</span>LKR ' + calcs.total_clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+          '<div><span class="fb-label">HH Alloc</span>LKR ' + calcs.total_hh.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
           '<div><span class="fb-label">Total Allocated</span>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Actual Clothing</span>LKR ' + calcs.actual_clothing_w.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Actual Household</span>LKR ' + calcs.actual_household_w.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Total Children</span>' + calcs.child_total + '</div>' +
         '</div><hr>' +
         '<div class="fb-grid-4">' +
           '<div><span class="fb-label">Savings (5%)</span><span class="fb-value fb-highlight">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
@@ -772,7 +792,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
         html += '</ul></div>';
       }
       
-      html += '<div class="fb-box"><h4>2. Final Month-End Balances</h4>' +
+      html += '<div class="fb-box"><h4>3. Final Month-End Balances</h4>' +
         '<div class="fb-grid-4">' +
           '<div><span class="fb-label">Food</span><span class="fb-value '+(calcs.food_balance<0?'fb-danger':'')+'">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
           '<div><span class="fb-label">Clothing</span><span class="fb-value '+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
