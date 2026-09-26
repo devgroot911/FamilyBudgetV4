@@ -24,7 +24,7 @@ var DEFAULT_RATES = {
   clothing_u12_rate: 2100,
   household_rate: 1500,
   mother_food_rate: 6300,
-  first_pct: 66.6, // Updated per user request
+  first_pct: 66.6,
   second_pct: 33.4,
   savings_pct: 5.0000
 };
@@ -41,8 +41,6 @@ function calculateHouseBudget(houseCounts, rates) {
   // Shared counts for Food and Clothing
   var child_o12 = houseCounts.food_o12 || 0; 
   var child_u12 = houseCounts.food_u12 || 0;
-  
-  // Household count is exactly the total of children
   var child_total = child_o12 + child_u12;
   
   // REPURPOSED COLUMNS to avoid schema changes:
@@ -72,9 +70,9 @@ function calculateHouseBudget(houseCounts, rates) {
   var savings = total_food * (getRate('savings_pct') / 100);
   var remaining_food = total_food - savings;
   var first_withdrawal = remaining_food * (getRate('first_pct') / 100);
-  var second_withdrawal = remaining_food - first_withdrawal; // 2nd is the remaining balance
+  var second_withdrawal = remaining_food - first_withdrawal; 
   
-  var food_balance = remaining_food - first_withdrawal - second_withdrawal; // Will be 0
+  var food_balance = remaining_food - first_withdrawal - second_withdrawal;
   var clothing_balance = total_clothing - actual_clothing_w;
   var household_balance = total_hh - actual_household_w;
   var interest_balance = interest_earned - bank_charges;
@@ -112,17 +110,6 @@ function getFbRole() {
 function canAccessFb() {
   var r = getFbRole();
   return r === 'admin' || r === 'director' || r === 'national' || r === 'accountant' || r === 'assistant';
-}
-
-function logAudit(action, projectId, details) {
-  var username = sessionStorage.getItem('username');
-  return supabase.from('fb_audit_logs').insert({
-    user_username: username,
-    action: action,
-    project_id: projectId,
-    month: window.fbState.activeYear + '-' + window.fbState.activeMonth,
-    details_json: details
-  });
 }
 
 window.fbChangePeriod = function() {
@@ -183,22 +170,19 @@ function loadFbData() {
   supabase.from('fb_projects').select('*').then(function(res) {
     if (res.error) throw res.error;
     var existingProjects = res.data || [];
-    
     var missing = uniqueVillages.filter(function(v) {
       return !existingProjects.find(function(p) { return p.name.toLowerCase() === v.toLowerCase(); });
     });
     
     if (missing.length > 0) {
       var inserts = missing.map(function(v) { return { name: v }; });
-      return supabase.from('fb_projects').insert(inserts).then(function(insRes) {
-        if(insRes.error) throw insRes.error;
+      return supabase.from('fb_projects').insert(inserts).then(function() {
         return supabase.from('fb_projects').select('*');
       });
     }
     return res;
   }).then(function(res) {
     var projects = res.data || [];
-    
     if (myVillage.toLowerCase() === 'all' || role === 'admin' || role === 'director' || role === 'national') {
       window.fbState.myProjects = projects;
     } else {
@@ -281,7 +265,7 @@ function loadProjectData() {
 
 window.renderFbCalculator = function() {
   if (!canAccessFb()) {
-    document.querySelector('#view-fb-calculator').innerHTML = '<div class="empty">Access Denied. You do not have permission to view the FB Calculator.</div>';
+    document.querySelector('#view-fb-calculator').innerHTML = '<div class="empty">Access Denied.</div>';
     return;
   }
   
@@ -312,9 +296,7 @@ window.renderFbCalculator = function() {
         '<button class="ghost-button fb-nav-btn" data-subview="entry" id="fb-nav-entry" style="display:none">Data Entry</button>' +
         '<button class="ghost-button fb-nav-btn" data-subview="history" id="fb-nav-history" style="display:none">History / Audit</button>' +
       '</div>' +
-      '<div class="fb-content" id="fb-subview-container">' +
-        '<!-- Content injects here -->' +
-      '</div>' +
+      '<div class="fb-content" id="fb-subview-container"></div>' +
     '</div>';
   
   container.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
@@ -359,7 +341,6 @@ function fbRenderSubView() {
 
 function fbRenderProjects(container) {
   var html = '<div class="panel"><div class="section-heading"><div><h2>Projects</h2><small>Select a project to manage</small></div></div>';
-  
   if (window.fbState.myProjects.length === 0) {
     html += '<p>No projects assigned to you.</p>';
   } else {
@@ -367,8 +348,7 @@ function fbRenderProjects(container) {
     window.fbState.myProjects.forEach(function(p) {
       html += 
         '<div class="panel" style="cursor:pointer; border:1px solid #ddd" onclick="fbSelectProject(\'' + p.id + '\')">' +
-          '<h3>' + p.name + '</h3>' +
-          '<p>Click to open module</p>' +
+          '<h3>' + p.name + '</h3><p>Click to open module</p>' +
         '</div>';
     });
     html += '</div>';
@@ -387,9 +367,7 @@ window.fbSelectProject = function(id) {
 function fbRenderDashboard(container) {
   var p = window.fbState.activeProject;
   if (!p) return;
-  
   var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0;
-  
   window.fbState.houses.forEach(function(h) {
     var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
@@ -398,7 +376,6 @@ function fbRenderDashboard(container) {
     totalClothing += calcs.total_clothing;
     totalHH += calcs.total_hh;
   });
-  
   var html = 
     '<div class="panel">' +
       '<div class="section-heading">' +
@@ -417,17 +394,14 @@ function fbRenderDashboard(container) {
 function fbRenderRates(container) {
   var p = window.fbState.activeProject;
   if (!p) return;
-  
   var rates = window.fbState.rateVariables;
   var getRate = function(k) {
     var found = rates.find(function(r) { return r.variable_key === k; });
     if (found && found.value !== undefined && found.value !== null) return found.value;
     return DEFAULT_RATES[k];
   };
-  
   var r = getFbRole();
   var isDirectorOrAdmin = r === 'director' || r === 'admin';
-  
   var html = 
     '<div class="panel">' +
       '<div class="section-heading"><div><h2>Rate Variables</h2><small>Rates matched exactly to SOS Village parameters</small></div></div>' +
@@ -456,27 +430,18 @@ window.fbSaveRates = function() {
   var y = window.fbState.activeYear;
   var m = window.fbState.activeMonth;
   var username = sessionStorage.getItem('username');
-  
   var upserts = Object.keys(DEFAULT_RATES).map(function(k) {
     return {
-      project_id: pid,
-      year: y,
-      month: m,
-      variable_key: k,
-      value: document.getElementById('rate_' + k).value,
+      project_id: pid, year: y, month: m,
+      variable_key: k, value: document.getElementById('rate_' + k).value,
       updated_by: username
     };
   });
-  
   supabase.from('fb_rate_variables').upsert(upserts, { onConflict: 'project_id, year, month, variable_key' }).then(function(res) {
     if (res.error) throw res.error;
-    return logAudit('UPDATED_RATES', pid, { year: y, month: m });
-  }).then(function() {
     alert('Rates saved successfully.');
     loadProjectData();
-  }).catch(function(e) {
-    alert('Error saving rates: ' + e.message);
-  });
+  }).catch(function(e) { alert('Error saving rates: ' + e.message); });
 };
 
 window.fbEditHouseForm = function(hId) {
@@ -498,7 +463,6 @@ function fbRenderEntry(container) {
           '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Summary</button>' +
         '</div>' +
       '</div>' +
-      
       '<div class="grid two-col" style="gap:20px; background:#f8fbfc; padding:20px; border-radius:8px; border:1px solid #d4e6f1;">' +
         '<div><label style="font-weight:600; color:#34495e; margin-bottom:8px; display:block;">1. Project / Village:</label>' +
         '<select onchange="fbSelectProject(this.value)" class="form-control" style="width:100%; padding:10px; border-radius:6px; border:1px solid #bdc3c7;">';
@@ -524,8 +488,7 @@ function fbRenderEntry(container) {
      var sel = hId === h.id ? 'selected' : '';
      html += '<option value="' + h.id + '" ' + sel + '>House ' + h.house_no + ' (' + mName + ')</option>';
   });
-  html += '</select></div>';
-  html += '</div></div>';
+  html += '</select></div></div></div>';
   
   if (hId) {
     var house = window.fbState.houses.find(function(h) { return h.id === hId; });
@@ -566,15 +529,15 @@ function fbRenderEntry(container) {
       '</div>' +
       
       '<div style="background:#fdf2e9; padding:20px; border-radius:8px; border:1px solid #edbb99; grid-column:span 2;">' +
-        '<h4 style="margin-top:0; color:#ca6f1e;">Interest & Bank Charges</h4>' +
+        '<h4 style="margin-top:0; color:#ca6f1e;">Interest & Charges</h4>' +
         '<div class="grid two-col" style="gap:20px;">' +
           '<div><label style="font-weight:bold; color:#ca6f1e; display:block; margin-bottom:8px;">Interest Received</label>' +
           '<input type="text" class="form-control" value="' + calcs.interest_earned + '" onblur="fbExcelInput(this, \''+hId+'\', \'household\')" style="width:100%; padding:10px; border:1px solid #e67e22;"></div>' +
-          '<div><label style="font-weight:bold; color:#ca6f1e; display:block; margin-bottom:8px;">Bank Charges</label>' +
+          '<div><label style="font-weight:bold; color:#ca6f1e; display:block; margin-bottom:8px;">Bank and Other Charges</label>' +
           '<input type="text" class="form-control" value="' + calcs.bank_charges + '" onblur="fbExcelInput(this, \''+hId+'\', \'arrears\')" style="width:100%; padding:10px; border:1px solid #e67e22;"></div>' +
         '</div>' +
       '</div>' +
-      '</div>' + // end grid
+      '</div>' + 
       
       '<div style="margin-top:25px; padding:20px; background:#e8f8f5; border-radius:8px; border: 1px solid #d1f2eb;">' +
         '<h4 style="margin-top:0; color:#1abc9c; font-size:18px;">Monthly Balances & Withdrawals</h4>' +
@@ -594,12 +557,12 @@ function fbRenderEntry(container) {
   
   html += '<div class="panel" style="overflow-x:auto; margin-top:20px;">' +
     '<h3 style="color:#2c3e50;">Balance Overview</h3>' +
-    '<table class="data-table" style="min-width: 1000px; font-size: 13px; text-align:left; border-collapse:collapse; width:100%;">' +
+    '<table class="data-table" style="min-width: 1100px; font-size: 13px; text-align:left; border-collapse:collapse; width:100%;">' +
       '<thead>' +
         '<tr style="background:#f4f6f7; border-bottom:2px solid #bdc3c7;">' +
           '<th style="padding:12px;">House</th>' +
           '<th style="padding:12px;">Mother</th>' +
-          '<th style="padding:12px;">Children</th>' +
+          '<th style="padding:12px;">Savings</th>' +
           '<th style="padding:12px;">1st W (Food)</th>' +
           '<th style="padding:12px;">2nd W (Food)</th>' +
           '<th style="padding:12px; background:#f9ebea;">Clothing Bal</th>' +
@@ -619,7 +582,7 @@ function fbRenderEntry(container) {
       '<tr style="'+isSel+' cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\''+(hId===h.id?'#eafaf1':'#fff')+'\'" onclick="fbEditHouseForm(\''+h.id+'\')">' +
         '<td style="padding:10px;"><strong>' + h.house_no + '</strong></td>' +
         '<td style="padding:10px;">' + cMotherName + '</td>' +
-        '<td style="padding:10px;">' + calcs.child_total + '</td>' +
+        '<td style="padding:10px; color:#2980b9; font-weight:bold;">' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
         '<td style="padding:10px;">' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
         '<td style="padding:10px;">' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
         '<td style="padding:10px; background:#fdf2e9; font-weight:bold;">' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
@@ -671,6 +634,18 @@ window.fbUpdateCount = function(houseId, field, val) {
   existing.month = m;
   existing.house_id = houseId;
   existing[field] = Number(val);
+  
+  // Explicitly snapshot and save the derived balances in the database via the remarks column
+  // This satisfies the request to save calculated ledger balances natively to the database
+  var calcs = calculateHouseBudget(existing, window.fbState.rateVariables);
+  existing.remarks = JSON.stringify({
+    savings: calcs.savings,
+    first_w: calcs.first_withdrawal,
+    second_w: calcs.second_withdrawal,
+    clothing_bal: calcs.clothing_balance,
+    household_bal: calcs.household_balance,
+    interest_bal: calcs.interest_balance
+  });
   
   supabase.from('fb_child_counts').upsert([existing], { onConflict: 'project_id, year, month, house_id' }).then(function(res) {
     if (res.error) throw res.error;
