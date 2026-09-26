@@ -29,12 +29,12 @@ var DEFAULT_RATES = {
 
 var style = document.createElement('style');
 style.innerHTML = 
-  '.fb-modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; padding:20px 10px; box-sizing:border-box; overflow-y:auto !important; -webkit-overflow-scrolling:touch; }' +
-  '.fb-modal-content { margin:20px auto 60px auto; background:#fff; width:100%; max-width:700px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.25); overflow:visible !important; max-height:none !important; height:auto !important; }' +
+  '.fb-modal-overlay { display:none; position:absolute; top:0; left:0; width:100%; background:rgba(0,0,0,0.6); z-index:999999; padding:0 10px 100px 10px; box-sizing:border-box; }' +
+  '.fb-modal-content { background:#fff; width:100%; max-width:900px; margin: 0 auto; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.25); position:relative; }' +
   '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; border-radius:8px 8px 0 0; display:flex; justify-content:space-between; align-items:center; }' +
   '.fb-modal-close { background:none; border:none; font-size:22px; font-weight:bold; color:#999; cursor:pointer; padding:0; line-height:1; }' +
   '.fb-modal-close:hover { color:#333; }' +
-  '.fb-modal-body { padding:20px; font-size:13px; line-height:1.4; color:#444; overflow:visible !important; max-height:none !important; height:auto !important; }' +
+  '.fb-modal-body { padding:20px; font-size:13px; line-height:1.4; color:#444; }' +
   '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:15px 20px; text-align:right; border-radius:0 0 8px 8px; }' +
   
   '.fb-layout { display: flex; flex-direction: column; gap: 15px; align-items: stretch; }' +
@@ -69,41 +69,41 @@ document.head.appendChild(style);
 // Custom UI Popups
 // ------------------------------------------------------------------
 window.fbAlert = function(msg, callback) {
-   var html = '<div class="fb-modal-header"><span>Notification</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
-              '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\n/g, '<br>') + '</p></div>' +
-              '<div class="fb-modal-footer">' +
-              '<button class="primary-button" id="fb-alert-btn">OK</button></div>';
-   document.getElementById('fb-modal-content').innerHTML = html;
-   document.body.style.overflow = 'hidden';
-   document.getElementById('fb-modal-overlay').style.display = 'block';
-   document.getElementById('fb-alert-btn').onclick = function() {
-      document.getElementById('fb-modal-overlay').style.display = 'none';
-      document.body.style.overflow = '';
-      if (callback) callback();
-   };
+    var html = '<div class="fb-modal-header"><span>Notification</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">&times;</button></div>' +
+               '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\\n/g, '<br>') + '</p></div>' +
+               '<div class="fb-modal-footer"><button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">Go Back</button>' +
+               '<button class="primary-button" id="fb-alert-btn">OK</button></div>';
+    document.getElementById('fb-modal-content').innerHTML = html;
+    // Do not lock page scrolling
+    document.getElementById('fb-modal-overlay').style.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight) + 'px';
+    document.getElementById('fb-modal-content').style.marginTop = (window.scrollY + 20) + 'px';
+    document.getElementById('fb-modal-overlay').style.display = 'block';
+    document.getElementById('fb-alert-btn').onclick = function() {
+        document.getElementById('fb-modal-overlay').style.display = 'none';
+        if (callback) callback();
+    };
 };
 
 window.fbConfirm = function(msg, onYes, onNo) {
-   var html = '<div class="fb-modal-header"><span>Please Confirm</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
-              '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\n/g, '<br>') + '</p></div>' +
-              '<div class="fb-modal-footer">' +
-              '<button class="ghost-button" id="fb-confirm-no" style="margin-right:15px;">Go Back</button>' +
-              '<button class="primary-button" id="fb-confirm-yes">Proceed</button></div>';
-   document.getElementById('fb-modal-content').innerHTML = html;
-   document.body.style.overflow = 'hidden';
-   document.getElementById('fb-modal-overlay').style.display = 'block';
-   
-   document.getElementById('fb-confirm-no').onclick = function() {
-      document.getElementById('fb-modal-overlay').style.display = 'none';
-      document.body.style.overflow = '';
-      if (onNo) onNo();
-   };
-   document.getElementById('fb-confirm-yes').onclick = function() {
-      document.getElementById('fb-modal-overlay').style.display = 'none';
-      document.body.style.overflow = '';
-      if (onYes) onYes();
-   };
+    var html = '<div class="fb-modal-header"><span>Please Confirm</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">&times;</button></div>' +
+               '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\\n/g, '<br>') + '</p></div>' +
+               '<div class="fb-modal-footer"><button class="ghost-button" id="fb-confirm-no">Go Back</button>' +
+               '<button class="primary-button" id="fb-confirm-yes">Proceed</button></div>';
+    document.getElementById('fb-modal-content').innerHTML = html;
+    // Do not lock page scrolling
+    document.getElementById('fb-modal-overlay').style.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight) + 'px';
+    document.getElementById('fb-modal-content').style.marginTop = (window.scrollY + 20) + 'px';
+    document.getElementById('fb-modal-overlay').style.display = 'block';
+    document.getElementById('fb-confirm-no').onclick = function() {
+        document.getElementById('fb-modal-overlay').style.display = 'none';
+        if (onNo) onNo();
+    };
+    document.getElementById('fb-confirm-yes').onclick = function() {
+        document.getElementById('fb-modal-overlay').style.display = 'none';
+        if (onYes) onYes();
+    };
 };
+
 
 // ------------------------------------------------------------------
 // Core Business Logic
@@ -224,6 +224,7 @@ window.fbParseMath = function(val) {
   var str = String(val).trim();
   if (str.indexOf('=') === 0) str = str.substring(1);
   str = str.replace(/[^0-9+\-*/().]/g, '');
+  str = str.replace(/\b0+(?=\d)/g, '');
   if (!str) return '';
   try { return Function('"use strict";return (' + str + ')')() || 0; }
   catch (e) { return 0; }
@@ -385,10 +386,15 @@ window.renderFbCalculator = function() {
         '<button class="fb-nav-btn" data-subview="rates" id="fb-nav-rates" style="display:none">Global Rates</button>' +
       '</div>' +
       '<div class="fb-content" id="fb-subview-container"></div>' +
-    '</div>' +
-    '<div id="fb-modal-overlay" class="fb-modal-overlay">' +
-      '<div id="fb-modal-content" class="fb-modal-content"></div>' +
     '</div>';
+    
+  if (!document.getElementById('fb-modal-overlay')) {
+    var overlay = document.createElement('div');
+    overlay.id = 'fb-modal-overlay';
+    overlay.className = 'fb-modal-overlay';
+    overlay.innerHTML = '<div id="fb-modal-content" class="fb-modal-content"></div>';
+    document.body.appendChild(overlay);
+  }
   
   document.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -744,13 +750,15 @@ window.fbReviewAndSave = function(houseNo) {
                 '</select></div>';
      });
      html += '</div><div class="fb-modal-footer">' +
-             '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px;">Go Back</button>' +
+             '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';" style="margin-right:15px;">Go Back</button>' +
              '<button class="primary-button" onclick="fbApplyOverdrafts(\''+houseNo+'\')">Apply Transfers & Continue</button>' +
              '</div>';
      
      document.getElementById('fb-modal-content').innerHTML = html;
-     document.body.style.overflow = 'hidden';
-     document.getElementById('fb-modal-overlay').style.display = 'block';
+     // removed overflow
+     document.getElementById('fb-modal-overlay').style.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight) + 'px';
+    document.getElementById('fb-modal-content').style.marginTop = (window.scrollY + 20) + 'px';
+    document.getElementById('fb-modal-overlay').style.display = 'block';
   } else {
      fbShowReviewModal(houseNo, []);
   }
@@ -808,76 +816,84 @@ window.fbShowReviewModal = function(houseNo, transfers) {
   window.fbState._activeTransfers = transferLog;
   
   var html = 
-    '<div class="fb-modal-header"><span>Review & Save: House ' + houseNo + '</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
+    '<div class="fb-modal-header"><span>Review & Save: House ' + houseNo + '</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">&times;</button></div>' +
     '<div class="fb-modal-body">' +
       '<div class="fb-box" style="margin-bottom:15px; border-left:3px solid #f39c12;"><h4>Permanent Historical Snapshot</h4>' +
         '<p style="font-size:13px; color:#555; margin:0;">Saving this will permanently lock <strong>' + houseData.mother_name + '</strong> as the Mother for this month\'s ledger.</p>' +
       '</div>' +
       
-      '<div class="fb-box" style="margin-bottom:15px; background:#f4f9f9; border-left:3px solid #16a085;"><h4>1. User Input Summary</h4>' +
-        '<div class="fb-grid-2" style="font-size:12px; color:#333;">' +
-          '<div><span class="fb-label">Children >12</span>' + (existing.food_o12||0) + '</div>' +
-          '<div><span class="fb-label">Children <12</span>' + (existing.food_u12||0) + '</div>' +
-          '<div><span class="fb-label">Mothers</span>' + (existing.mother_count||0) + '</div>' +
-          '<div><span class="fb-label">Aunt Amount</span>LKR ' + Number(existing.aunt_amount||0).toLocaleString() + '</div>' +
-          
-          '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
-          
-          '<div><span class="fb-label">Actual Clothing</span>LKR ' + calcs.actual_clothing_w.toLocaleString() + '</div>' +
-          '<div><span class="fb-label">Actual Household</span>LKR ' + calcs.actual_household_w.toLocaleString() + '</div>' +
-          '<div><span class="fb-label">Interest Received</span>LKR ' + calcs.interest_earned.toLocaleString() + '</div>' +
-          '<div><span class="fb-label">Bank Charges</span>LKR ' + calcs.bank_charges.toLocaleString() + '</div>' +
-          
-          '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
-          
-          '<div><span class="fb-label">Adjustments</span>LKR ' + Number(existing.adjustment||0).toLocaleString() + '</div>' +
+      '<div style="display:flex; flex-wrap:wrap; gap:15px;">' +
+        '<div style="flex:1 1 350px;">' +
+          '<div class="fb-box" style="height:100%; box-sizing:border-box; margin:0; background:#f4f9f9; border-left:3px solid #16a085;"><h4>1. User Input Summary</h4>' +
+            '<div class="fb-grid-2" style="font-size:12px; color:#333;">' +
+              '<div><span class="fb-label">Children >12</span>' + (existing.food_o12||0) + '</div>' +
+              '<div><span class="fb-label">Children <12</span>' + (existing.food_u12||0) + '</div>' +
+              '<div><span class="fb-label">Mothers</span>' + (existing.mother_count||0) + '</div>' +
+              '<div><span class="fb-label">Aunt Amount</span>LKR ' + Number(existing.aunt_amount||0).toLocaleString() + '</div>' +
+              
+              '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
+              
+              '<div><span class="fb-label">Actual Clothing</span>LKR ' + calcs.actual_clothing_w.toLocaleString() + '</div>' +
+              '<div><span class="fb-label">Actual Household</span>LKR ' + calcs.actual_household_w.toLocaleString() + '</div>' +
+              '<div><span class="fb-label">Interest Received</span>LKR ' + calcs.interest_earned.toLocaleString() + '</div>' +
+              '<div><span class="fb-label">Bank Charges</span>LKR ' + calcs.bank_charges.toLocaleString() + '</div>' +
+              
+              '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
+              
+              '<div><span class="fb-label">Adjustments</span>LKR ' + Number(existing.adjustment||0).toLocaleString() + '</div>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
-      '</div>' +
-      
-      '<div class="fb-box" style="margin-bottom:15px;"><h4>2. System Calculation & Withdrawals</h4>' +
-        '<div class="fb-grid-2" style="margin-bottom:10px; font-size:12px; color:#666;">' +
-          '<div><span class="fb-label">Prev Food</span>LKR ' + prev.food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Prev Cloth</span>LKR ' + prev.clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Prev HH</span>LKR ' + prev.household.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Prev Int</span>LKR ' + prev.interest.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+        
+        '<div style="flex:1 1 350px; display:flex; flex-direction:column; gap:15px;">' +
+          '<div class="fb-box" style="margin:0;"><h4>2. System Calculation & Withdrawals</h4>' +
+            '<div class="fb-grid-2" style="margin-bottom:10px; font-size:12px; color:#666;">' +
+              '<div><span class="fb-label">Prev Food</span>LKR ' + prev.food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              '<div><span class="fb-label">Prev Cloth</span>LKR ' + prev.clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              '<div><span class="fb-label">Prev HH</span>LKR ' + prev.household.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              '<div><span class="fb-label">Prev Int</span>LKR ' + prev.interest.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              
+              '<div style="grid-column: span 2;"><hr style="border-top:1px solid #eee; margin:2px 0;"></div>' +
+              
+              '<div><span class="fb-label">Food Alloc</span>LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              '<div><span class="fb-label">Clothing Alloc</span>LKR ' + calcs.total_clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              '<div><span class="fb-label">HH Alloc</span>LKR ' + calcs.total_hh.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+              '<div><span class="fb-label">Total Allocated</span>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
+            '</div><hr style="border-top:1px solid #eee; margin:10px 0;">' +
+            '<div class="fb-grid-2">' +
+              '<div><span class="fb-label">Savings (5%)</span><span class="fb-value fb-highlight">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+              '<div><span class="fb-label">Food Portion (1st)</span><span class="fb-value">LKR ' + calcs.first_food_portion.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+              '<div><span class="fb-label">Total 1st W</span><span class="fb-value">LKR ' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+              '<div><span class="fb-label">2nd W</span><span class="fb-value">LKR ' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+            '</div>' +
+          '</div>';
           
-          '<div style="grid-column: span 2;"><hr style="border-top:1px solid #eee; margin:2px 0;"></div>' +
-          
-          '<div><span class="fb-label">Food Alloc</span>LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Clothing Alloc</span>LKR ' + calcs.total_clothing.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">HH Alloc</span>LKR ' + calcs.total_hh.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-          '<div><span class="fb-label">Total Allocated</span>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>' +
-        '</div><hr style="border-top:1px solid #eee; margin:10px 0;">' +
-        '<div class="fb-grid-2">' +
-          '<div><span class="fb-label">Savings (5%)</span><span class="fb-value fb-highlight">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">Food Portion (1st)</span><span class="fb-value">LKR ' + calcs.first_food_portion.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">Total 1st W</span><span class="fb-value">LKR ' + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">2nd W</span><span class="fb-value">LKR ' + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-        '</div>' +
-      '</div>';
-      
       if (transferLog.length > 0) {
-        html += '<div class="fb-box" style="margin-bottom:15px; border-left:3px solid #3498db;"><h4>Accountant Transfers Applied</h4><ul style="margin:0; padding-left:20px; font-size:13px; color:#333;">';
+        html += '<div class="fb-box" style="margin:0; border-left:3px solid #3498db;"><h4>Accountant Transfers Applied</h4><ul style="margin:0; padding-left:20px; font-size:13px; color:#333;">';
         transferLog.forEach(function(l) { html += '<li>' + l + '</li>'; });
         html += '</ul></div>';
       }
       
-      html += '<div class="fb-box"><h4>3. Final Month-End Balances</h4>' +
-        '<div class="fb-grid-2">' +
-          '<div><span class="fb-label">Food</span><span class="fb-value '+(calcs.food_balance<0?'fb-danger':'')+'">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">Clothing</span><span class="fb-value '+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">Household</span><span class="fb-value '+(calcs.household_balance<0?'fb-danger':'')+'">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
-          '<div><span class="fb-label">Interest</span><span class="fb-value '+(calcs.interest_balance<0?'fb-danger':'fb-success')+'">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+      html += '<div class="fb-box" style="margin:0;"><h4>3. Final Month-End Balances</h4>' +
+            '<div class="fb-grid-2">' +
+              '<div><span class="fb-label">Food</span><span class="fb-value '+(calcs.food_balance<0?'fb-danger':'')+'">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+              '<div><span class="fb-label">Clothing</span><span class="fb-value '+(calcs.clothing_balance<0?'fb-danger':'')+'">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+              '<div><span class="fb-label">Household</span><span class="fb-value '+(calcs.household_balance<0?'fb-danger':'')+'">LKR ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+              '<div><span class="fb-label">Interest</span><span class="fb-value '+(calcs.interest_balance<0?'fb-danger':'fb-success')+'">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</span></div>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>' +
     '<div class="fb-modal-footer">' +
-      '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px;">Go Back</button>' +
+      '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';" style="margin-right:15px;">Go Back</button>' +
       '<button class="primary-button" onclick="fbConfirmSaveData(\''+houseNo+'\')">Confirm & Save</button>' +
     '</div>';
     
   document.getElementById('fb-modal-content').innerHTML = html;
-  document.body.style.overflow = 'hidden';
+  // removed overflow
+  document.getElementById('fb-modal-overlay').style.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight) + 'px';
+  document.getElementById('fb-modal-content').style.marginTop = (window.scrollY + 20) + 'px';
   document.getElementById('fb-modal-overlay').style.display = 'block';
 };
 
