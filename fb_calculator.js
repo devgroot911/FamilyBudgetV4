@@ -113,7 +113,21 @@ function getPreviousBalances(houseNo, targetYear, targetMonth) {
       if (c.year === targetYear && c.month < targetMonth) return true;
       return false;
   });
-  if (history.length === 0) return { food: 0, clothing: 0, household: 0, interest: 0 };
+  
+  if (history.length === 0) {
+      var current = window.fbState.childCounts.find(function(c) { 
+          return String(c.house_no) === String(houseNo) && c.year === targetYear && c.month === targetMonth; 
+      }) || {};
+      
+      return {
+          food: Number(current.open_food || 0),
+          clothing: Number(current.open_cloth || 0),
+          household: Number(current.open_hh || 0),
+          interest: Number(current.open_int || 0),
+          isManual: true
+      };
+  }
+  
   history.sort(function(a, b) {
       if (a.year !== b.year) return b.year - a.year;
       return b.month - a.month;
@@ -123,7 +137,8 @@ function getPreviousBalances(houseNo, targetYear, targetMonth) {
       food: Number(last.food_balance || 0),
       clothing: Number(last.clothing_balance || 0),
       household: Number(last.household_balance || 0),
-      interest: Number(last.interest_balance || 0)
+      interest: Number(last.interest_balance || 0),
+      isManual: false
   };
 }
 
@@ -309,7 +324,22 @@ function loadVillageData() {
   fbRenderSubView();
   
   supabase.from('fb_child_counts').select('*').eq('village', window.fbState.activeVillage).then(function(res) {
-    window.fbState.historicalCounts = res.data || [];
+    var data = res.data || [];
+    data.forEach(function(c) {
+       if (c.remarks && typeof c.remarks === 'string' && c.remarks.indexOf('{') === 0) {
+           try {
+               var r = JSON.parse(c.remarks);
+               if (r.opening) {
+                   c.open_food = r.opening.food || 0;
+                   c.open_cloth = r.opening.cloth || 0;
+                   c.open_hh = r.opening.hh || 0;
+                   c.open_int = r.opening.int || 0;
+               }
+           } catch(e) {}
+       }
+    });
+    
+    window.fbState.historicalCounts = data;
     window.fbState.childCounts = window.fbState.historicalCounts.filter(function(c) {
       return c.year === window.fbState.activeYear && c.month === window.fbState.activeMonth;
     });
@@ -551,9 +581,22 @@ function fbRenderEntry(container) {
       '<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">' +
         '<h3 style="margin:0; font-size:16px;">Data Entry</h3>' +
         (window.fbState.hasUnsavedChanges ? '<span class="fb-danger" style="font-weight:bold; padding:4px 8px; border-radius:4px;">Unsaved Changes</span>' : '') +
-      '</div>' +
+      '</div>';
       
-      '<div class="fb-grid-3" style="margin-bottom:15px;">' +
+    if (prev.isManual) {
+       html += '<div class="fb-box" style="border:2px solid #f39c12; background:#fef9e7; margin-bottom:15px;">' +
+         '<h4 style="color:#d35400;">Opening Balances (No Previous Month Record Found)</h4>' +
+         '<p style="font-size:12px; margin:0 0 10px 0; color:#555;">Please set the starting balances manually for this month.</p>' +
+         '<div class="fb-grid-4">' +
+            '<div><label class="fb-label">Food Start</label><input type="text" class="form-control fb-compact-input" value="'+(counts.open_food||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'open_food\')"></div>' +
+            '<div><label class="fb-label">Clothing Start</label><input type="text" class="form-control fb-compact-input" value="'+(counts.open_cloth||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'open_cloth\')"></div>' +
+            '<div><label class="fb-label">Household Start</label><input type="text" class="form-control fb-compact-input" value="'+(counts.open_hh||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'open_hh\')"></div>' +
+            '<div><label class="fb-label">Interest Start</label><input type="text" class="form-control fb-compact-input" value="'+(counts.open_int||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'open_int\')"></div>' +
+         '</div>' +
+       '</div>';
+    }
+      
+    html += '<div class="fb-grid-3" style="margin-bottom:15px;">' +
         '<div class="fb-box"><h4>1. Demographics & Additions</h4>' +
           '<div class="fb-grid-2">' +
             '<div><label class="fb-label">Child >12</label><input type="text" class="form-control fb-compact-input" value="'+(counts.food_o12||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'food_o12\')"></div>' +
@@ -849,7 +892,12 @@ window.fbConfirmSaveData = function(houseNo) {
   payload.interest_balance = calcs.interest_balance;
   payload.mother_name = houseData.mother_name;
   
-  payload.remarks = JSON.stringify({ savings: calcs.savings, first_w: calcs.first_withdrawal, second_w: calcs.second_withdrawal, mother: houseData.mother_name, transfers: transferLog });
+  var openingObj = undefined;
+  if (existing.open_food !== undefined || existing.open_cloth !== undefined) {
+     openingObj = { food: existing.open_food, cloth: existing.open_cloth, hh: existing.open_hh, int: existing.open_int };
+  }
+  
+  payload.remarks = JSON.stringify({ savings: calcs.savings, first_w: calcs.first_withdrawal, second_w: calcs.second_withdrawal, mother: houseData.mother_name, transfers: transferLog, opening: openingObj });
   
   document.getElementById('fb-modal-overlay').style.display = 'none';
   document.body.style.overflow = '';
