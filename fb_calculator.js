@@ -989,6 +989,10 @@ window.fbConfirmSaveData = function(houseNo) {
   delete payload.open_cloth;
   delete payload.open_hh;
   delete payload.open_int;
+  delete payload.manual_adj_food;
+  delete payload.manual_adj_cloth;
+  delete payload.manual_adj_hh;
+  delete payload.manual_adj_int;
   
   document.getElementById('fb-modal-overlay').style.display = 'none';
   document.body.style.overflow = '';
@@ -1314,6 +1318,10 @@ window.fbConfirmBulkSave = function() {
     delete clean.open_cloth;
     delete clean.open_hh;
     delete clean.open_int;
+    delete clean.manual_adj_food;
+    delete clean.manual_adj_cloth;
+    delete clean.manual_adj_hh;
+    delete clean.manual_adj_int;
     return clean;
   });
   
@@ -1626,5 +1634,3 @@ function _buildXhPayload(data, houseNo, adjustAcct, adjustAmt, logString) {
   });
   return p;
 }
-
-\n  delete payload.manual_adj_food;\n  delete payload.manual_adj_cloth;\n  delete payload.manual_adj_hh;\n  delete payload.manual_adj_int;\n    delete clean.manual_adj_food;\n    delete clean.manual_adj_cloth;\n    delete clean.manual_adj_hh;\n    delete clean.manual_adj_int;
