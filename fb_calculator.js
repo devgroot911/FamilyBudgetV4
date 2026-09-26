@@ -29,8 +29,8 @@ var DEFAULT_RATES = {
 
 var style = document.createElement('style');
 style.innerHTML = 
-  '.fb-modal-overlay { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:99999; align-items:center; justify-content:center; padding: 20px; box-sizing: border-box; }' +
-  '.fb-modal-content { background:#fff; width:100%; max-width:650px; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.15); }' +
+  '.fb-modal-overlay { display:none; position:fixed; top:0; bottom:0; left:0; right:0; background:rgba(0,0,0,0.55); z-index:999999; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }' +
+  '.fb-modal-content { margin:auto; background:#fff; width:100%; max-width:650px; max-height:90vh; border-radius:8px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.25); }' +
   '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; }' +
   '.fb-modal-body { padding:20px; overflow-y:auto; flex:1; font-size:14px; line-height:1.5; color:#444; }' +
   '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:15px 20px; text-align:right; }' +
