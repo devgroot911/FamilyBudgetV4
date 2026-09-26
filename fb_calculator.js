@@ -636,12 +636,25 @@ window.fbReviewAndSave = function(houseNo) {
             ? 'Cover from Interest (Warning: Insufficient, ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ' avail)' 
             : 'Cover from Interest (Avail: ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
             
+        var hhLabel = calcs.household_balance < od.amount 
+            ? 'Cover from Household (Warning: Insufficient, ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ' avail)' 
+            : 'Cover from Household (Avail: ' + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
+
+        var clLabel = calcs.clothing_balance < od.amount 
+            ? 'Cover from Clothing (Warning: Insufficient, ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ' avail)' 
+            : 'Cover from Clothing (Avail: ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + ')';
+
+        var crossCover = '';
+        if (od.field !== 'household_balance') crossCover += '<option value="household_balance">' + hhLabel + '</option>';
+        if (od.field !== 'clothing_balance') crossCover += '<option value="clothing_balance">' + clLabel + '</option>';
+
         html += '<div class="fb-box" style="margin-bottom:10px;">' +
                 '<label class="fb-label">' + od.label + ' Overdraft: LKR ' + od.amount.toLocaleString(undefined, {minimumFractionDigits:2}) + '</label>' +
                 '<select id="od_resolve_' + od.field + '" class="form-control">' +
                    '<option value="none">Keep Negative Balance (Carry Forward)</option>' +
                    '<option value="food_balance">' + foodLabel + '</option>' +
                    '<option value="interest_balance">' + intLabel + '</option>' +
+                   crossCover +
                 '</select></div>';
      });
      html += '</div><div class="fb-modal-footer">' +
@@ -663,26 +676,22 @@ window.fbApplyOverdrafts = function(houseNo) {
    var calcs = calculateHouseBudget(existing, window.fbState.rateVariables, prev);
    
    var transfers = [];
-   var foodDeduction = 0;
-   var intDeduction = 0;
+   var deductions = { food_balance: 0, interest_balance: 0, household_balance: 0, clothing_balance: 0 };
    
    ['clothing_balance', 'household_balance'].forEach(function(f) {
       var sel = document.getElementById('od_resolve_' + f);
       if (sel && sel.value !== 'none') {
          var amt = Math.abs(calcs[f]);
-         if (sel.value === 'food_balance') foodDeduction += amt;
-         if (sel.value === 'interest_balance') intDeduction += amt;
+         deductions[sel.value] += amt;
          transfers.push({ to: f, from: sel.value, amount: amt });
       }
    });
    
    var warnings = [];
-   if (foodDeduction > calcs.food_balance) {
-      warnings.push("The requested transfers will push the Food Balance into the negative.");
-   }
-   if (intDeduction > calcs.interest_balance) {
-       warnings.push("The requested transfers will push the Interest Balance into the negative.");
-   }
+   if (deductions.food_balance > calcs.food_balance) warnings.push("The requested transfers will push the Food Balance into the negative.");
+   if (deductions.interest_balance > calcs.interest_balance) warnings.push("The requested transfers will push the Interest Balance into the negative.");
+   if (deductions.household_balance > calcs.household_balance) warnings.push("The requested transfers will push the Household Balance into the negative.");
+   if (deductions.clothing_balance > calcs.clothing_balance) warnings.push("The requested transfers will push the Clothing Balance into the negative.");
    
    if (warnings.length > 0) {
       fbConfirm(warnings.join("\n") + "\n\nDo you want to proceed and carry these negative balances forward?", function() {
