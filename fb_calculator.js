@@ -245,7 +245,7 @@ window.fbChangePeriod = function() {
       window.fbState.hasUnsavedChanges = false;
       window.fbState.activeMonth = parseInt(document.getElementById('fb-sel-month').value);
       window.fbState.activeYear = parseInt(document.getElementById('fb-sel-year').value);
-      loadVillageData();
+      loadFbData();
   };
   if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
   else proceed();
@@ -269,8 +269,24 @@ function loadFbData() {
   } else {
     window.fbState.myVillages = uniqueVillages.filter(function(v) { return v.toLowerCase() === myVillage.toLowerCase(); });
   }
-  window.fbState.loading = false;
-  fbRenderSubView();
+  
+  supabase.from('fb_rate_variables')
+    .select('*')
+    .eq('village', 'ALL')
+    .eq('year', window.fbState.activeYear)
+    .eq('month', window.fbState.activeMonth)
+    .then(function(res) {
+       window.fbState.rateVariables = res.data || [];
+       if (window.fbState.activeVillage) {
+           loadVillageData();
+       } else {
+           window.fbState.loading = false;
+           fbRenderSubView();
+       }
+    }).catch(function() {
+       window.fbState.loading = false;
+       fbRenderSubView();
+    });
 }
 
 function loadVillageData() {
@@ -279,15 +295,11 @@ function loadVillageData() {
   window.fbState.hasUnsavedChanges = false;
   fbRenderSubView();
   
-  Promise.all([
-    supabase.from('fb_child_counts').select('*').eq('village', window.fbState.activeVillage),
-    supabase.from('fb_rate_variables').select('*').eq('village', window.fbState.activeVillage).eq('year', window.fbState.activeYear).eq('month', window.fbState.activeMonth)
-  ]).then(function(results) {
-    window.fbState.historicalCounts = results[0].data || [];
+  supabase.from('fb_child_counts').select('*').eq('village', window.fbState.activeVillage).then(function(res) {
+    window.fbState.historicalCounts = res.data || [];
     window.fbState.childCounts = window.fbState.historicalCounts.filter(function(c) {
       return c.year === window.fbState.activeYear && c.month === window.fbState.activeMonth;
     });
-    window.fbState.rateVariables = results[1].data || [];
     window.fbState.loading = false;
     fbRenderSubView();
   }).catch(function(err) {
@@ -357,108 +369,112 @@ function fbRenderSubView() {
     btn.style.background = btn.dataset.subview === window.fbState.currentSubView ? '#f5f5f5' : 'transparent';
   });
   
-  var hasProj = !!window.fbState.activeVillage;
-  ['dashboard', 'rates', 'entry'].forEach(function(id) {
-    var el = document.getElementById('fb-nav-' + id);
-    if(el) el.style.display = hasProj ? 'block' : 'none';
-  });
-  
-  if (window.fbState.loading) return container.innerHTML = '<div class="empty">Loading...</div>';
-  
-  switch(window.fbState.currentSubView) {
-    case 'villages': return fbRenderProjects(container);
-    case 'dashboard': return fbRenderDashboard(container);
-    case 'rates': return fbRenderRates(container);
-    case 'entry': return fbRenderEntry(container);
-    default: container.innerHTML = '<div class="empty">Select a view</div>';
-  }
-}
-
-// ------------------------------------------------------------------
-// Sub Views
-// ------------------------------------------------------------------
-function fbRenderProjects(container) {
-  var html = '<div class="panel"><div class="section-heading"><div><h2>Villages</h2><small>Select a village</small></div></div>';
-  if (window.fbState.myVillages.length === 0) {
-    html += '<p>No villages assigned.</p>';
-  } else {
-    html += '<div class="grid two-col">';
-    window.fbState.myVillages.forEach(function(vName) {
-      html += '<div class="panel" style="cursor:pointer; border:1px solid #eaeaea;" onclick="fbSelectVillage(\'' + vName + '\')"><h3>' + vName + '</h3></div>';
-    });
-    html += '</div>';
-  }
-  container.innerHTML = html + '</div>';
-}
-
-window.fbSelectVillage = function(vName) {
-  var proceed = function() {
-      window.fbState.hasUnsavedChanges = false;
-      window.fbState.activeVillage = vName;
-      window.fbState.editingHouseNo = null; 
-      window.fbState.currentSubView = 'entry';
-      loadVillageData();
-  };
-  if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
-  else proceed();
-};
-
-function fbRenderDashboard(container) {
-  var vName = window.fbState.activeVillage;
-  if (!vName) return;
-  var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0;
-  
-  var houses = getVillageHouses(vName);
-  houses.forEach(function(h) {
-    var prev = getPreviousBalances(h.house_no, window.fbState.activeYear, window.fbState.activeMonth);
-    var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {};
-    var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
-    totalBudget += calcs.total_budget;
-    totalFood += calcs.total_food;
-    totalClothing += calcs.total_clothing;
-    totalHH += calcs.total_hh;
-  });
-  
-  container.innerHTML = 
-    '<div class="panel">' +
-      '<div class="section-heading"><div><h2>Dashboard</h2><small>' + vName + '</small></div></div>' +
-      '<div class="fb-grid-4">' +
-        '<div class="fb-box"><span class="fb-label">Total Allocated Budget</span><div class="fb-value">LKR ' + totalBudget.toLocaleString() + '</div></div>' +
-        '<div class="fb-box"><span class="fb-label">Food Allocated</span><div class="fb-value">LKR ' + totalFood.toLocaleString() + '</div></div>' +
-        '<div class="fb-box"><span class="fb-label">Clothing Allocated</span><div class="fb-value">LKR ' + totalClothing.toLocaleString() + '</div></div>' +
-        '<div class="fb-box"><span class="fb-label">Household Allocated</span><div class="fb-value">LKR ' + totalHH.toLocaleString() + '</div></div>' +
-      '</div>' +
-    '</div>';
-}
-
-function fbRenderRates(container) {
-  var rates = window.fbState.rateVariables;
-  var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
-  var html = '<div class="panel"><div class="section-heading"><div><h2>Rates</h2><small>System calculation variables</small></div></div><div class="table-wrap"><table><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>';
-  
-  Object.keys(DEFAULT_RATES).forEach(function(k) {
-    var val = (rates.find(function(r) { return r.variable_key === k; }) || {}).value;
-    if (val === undefined) val = DEFAULT_RATES[k];
-    var disabled = (k.indexOf('_pct') !== -1 && !isDirector) ? 'disabled' : '';
-    html += '<tr><td><strong>' + k + '</strong></td><td><input type="number" step="0.0001" value="' + val + '" id="rate_' + k + '" class="form-control" ' + disabled + ' /></td></tr>';
-  });
-  
-  container.innerHTML = html + '</tbody></table></div><div class="button-row"><button class="primary-button" onclick="fbSaveRates()">Save Rates</button></div></div>';
-}
-
-window.fbSaveRates = function() {
-  var vName = window.fbState.activeVillage;
-  var upserts = Object.keys(DEFAULT_RATES).map(function(k) {
-    return { village: vName, year: window.fbState.activeYear, month: window.fbState.activeMonth, variable_key: k, value: document.getElementById('rate_' + k).value, updated_by: sessionStorage.getItem('username') };
-  });
-  supabase.from('fb_rate_variables').upsert(upserts, { onConflict: 'village, year, month, variable_key' }).then(function(res) {
-    if (res.error) throw res.error;
-    fbAlert('Rates saved successfully.');
-    loadVillageData();
-  }).catch(function(err) {
-    fbAlert('Error saving rates. Have you run the SQL migration? ' + err.message);
-  });
-};
+      var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
+      var ratesBtn = document.getElementById('fb-nav-rates');
+      if (ratesBtn) ratesBtn.style.display = isDirector ? 'block' : 'none';
+      
+      var hasProj = !!window.fbState.activeVillage;
+      ['dashboard', 'entry'].forEach(function(id) {
+        var el = document.getElementById('fb-nav-dashboard');
+        if (id==='dashboard') { el = document.getElementById('fb-nav-dashboard'); if(el) el.style.display = hasProj ? 'block' : 'none'; }
+        if (id==='entry') { el = document.getElementById('fb-nav-entry'); if(el) el.style.display = hasProj ? 'block' : 'none'; }
+      });
+      
+      if (window.fbState.loading) return container.innerHTML = '<div class="empty">Loading...</div>';
+      
+      switch(window.fbState.currentSubView) {
+        case 'villages': return fbRenderProjects(container);
+        case 'dashboard': return fbRenderDashboard(container);
+        case 'rates': return fbRenderRates(container);
+        case 'entry': return fbRenderEntry(container);
+        default: container.innerHTML = '<div class="empty">Select a view</div>';
+      }
+    }
+    
+    // ------------------------------------------------------------------
+    // Sub Views
+    // ------------------------------------------------------------------
+    function fbRenderProjects(container) {
+      var html = '<div class="panel"><div class="section-heading"><div><h2>Villages</h2><small>Select a village</small></div></div>';
+      if (window.fbState.myVillages.length === 0) {
+        html += '<p>No villages assigned.</p>';
+      } else {
+        html += '<div class="grid two-col">';
+        window.fbState.myVillages.forEach(function(vName) {
+          html += '<div class="panel" style="cursor:pointer; border:1px solid #eaeaea;" onclick="fbSelectVillage(\'' + vName + '\')"><h3>' + vName + '</h3></div>';
+        });
+        html += '</div>';
+      }
+      container.innerHTML = html + '</div>';
+    }
+    
+    window.fbSelectVillage = function(vName) {
+      var proceed = function() {
+          window.fbState.hasUnsavedChanges = false;
+          window.fbState.activeVillage = vName;
+          window.fbState.editingHouseNo = null; 
+          window.fbState.currentSubView = 'entry';
+          loadVillageData();
+      };
+      if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
+      else proceed();
+    };
+    
+    function fbRenderDashboard(container) {
+      var vName = window.fbState.activeVillage;
+      if (!vName) return;
+      var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0;
+      
+      var houses = getVillageHouses(vName);
+      houses.forEach(function(h) {
+        var prev = getPreviousBalances(h.house_no, window.fbState.activeYear, window.fbState.activeMonth);
+        var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {};
+        var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
+        totalBudget += calcs.total_budget;
+        totalFood += calcs.total_food;
+        totalClothing += calcs.total_clothing;
+        totalHH += calcs.total_hh;
+      });
+      
+      container.innerHTML = 
+        '<div class="panel">' +
+          '<div class="section-heading"><div><h2>Dashboard</h2><small>' + vName + '</small></div></div>' +
+          '<div class="fb-grid-4">' +
+            '<div class="fb-box"><span class="fb-label">Total Allocated Budget</span><div class="fb-value">LKR ' + totalBudget.toLocaleString() + '</div></div>' +
+            '<div class="fb-box"><span class="fb-label">Food Allocated</span><div class="fb-value">LKR ' + totalFood.toLocaleString() + '</div></div>' +
+            '<div class="fb-box"><span class="fb-label">Clothing Allocated</span><div class="fb-value">LKR ' + totalClothing.toLocaleString() + '</div></div>' +
+            '<div class="fb-box"><span class="fb-label">Household Allocated</span><div class="fb-value">LKR ' + totalHH.toLocaleString() + '</div></div>' +
+          '</div>' +
+        '</div>';
+    }
+    
+    function fbRenderRates(container) {
+      var rates = window.fbState.rateVariables;
+      var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
+      var html = '<div class="panel"><div class="section-heading"><div><h2>Global Rates</h2><small>System calculation variables (Applies to ALL Villages)</small></div></div><div class="table-wrap"><table><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>';
+      
+      Object.keys(DEFAULT_RATES).forEach(function(k) {
+        var val = (rates.find(function(r) { return r.variable_key === k; }) || {}).value;
+        if (val === undefined) val = DEFAULT_RATES[k];
+        var disabled = (k.indexOf('_pct') !== -1 && !isDirector) ? 'disabled' : '';
+        html += '<tr><td><strong>' + k + '</strong></td><td><input type="number" step="0.0001" value="' + val + '" id="rate_' + k + '" class="form-control" ' + disabled + ' /></td></tr>';
+      });
+      
+      container.innerHTML = html + '</tbody></table></div><div class="button-row"><button class="primary-button" onclick="fbSaveRates()">Save Global Rates</button></div></div>';
+    }
+    
+    window.fbSaveRates = function() {
+      var upserts = Object.keys(DEFAULT_RATES).map(function(k) {
+        return { village: 'ALL', year: window.fbState.activeYear, month: window.fbState.activeMonth, variable_key: k, value: document.getElementById('rate_' + k).value, updated_by: sessionStorage.getItem('username') };
+      });
+      supabase.from('fb_rate_variables').upsert(upserts, { onConflict: 'village, year, month, variable_key' }).then(function(res) {
+        if (res.error) throw res.error;
+        fbAlert('Global Rates saved successfully.');
+        loadFbData();
+      }).catch(function(err) {
+        fbAlert('Error saving rates. Have you run the SQL migration? ' + err.message);
+      });
+    };
 
 window.fbEditHouseForm = function(hNo, selectElement) {
   if (!hNo) {
