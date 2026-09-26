@@ -421,9 +421,8 @@ function fbRenderSubView() {
       else btn.classList.remove('active');
   });
   
-  var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
   var ratesBtn = document.getElementById('fb-nav-rates');
-  if (ratesBtn) ratesBtn.style.display = isDirector ? 'block' : 'none';
+  if (ratesBtn) ratesBtn.style.display = 'block';
   
   var hasProj = !!window.fbState.activeVillage;
   ['dashboard', 'entry'].forEach(function(id) {
@@ -501,18 +500,25 @@ function fbRenderDashboard(container) {
 
 function fbRenderRates(container) {
   var rates = window.fbState.rateVariables;
-  var isDirector = getFbRole() === 'director' || getFbRole() === 'admin';
+  var role = getFbRole();
+  var isFinanceOrAdmin = role === 'admin' || role === 'accountant';
+  
   var html = '<div class="panel" style="padding:20px;"><div class="section-heading" style="margin-bottom:20px;"><div><h2 style="margin:0; font-size:18px;">Global Rates</h2><small>System calculation variables (Applies to ALL Villages)</small></div></div>' +
              '<div class="fb-table-wrap"><table class="fb-data-table"><thead><tr><th>Variable Name</th><th>Value (LKR / % )</th></tr></thead><tbody>';
   
   Object.keys(DEFAULT_RATES).forEach(function(k) {
     var val = (rates.find(function(r) { return r.variable_key === k; }) || {}).value;
     if (val === undefined) val = DEFAULT_RATES[k];
-    var disabled = (k.indexOf('_pct') !== -1 && !isDirector) ? 'disabled' : '';
+    var disabled = !isFinanceOrAdmin ? 'disabled' : '';
     html += '<tr><td><strong>' + k + '</strong></td><td><input type="number" step="0.0001" value="' + val + '" id="rate_' + k + '" class="form-control fb-compact-input" style="max-width:200px;" ' + disabled + ' /></td></tr>';
   });
   
-  container.innerHTML = html + '</tbody></table></div><div style="margin-top:15px; text-align:right;"><button class="primary-button" onclick="fbSaveRates()">Save Global Rates</button></div></div>';
+  html += '</tbody></table></div>';
+  if (isFinanceOrAdmin) {
+    html += '<div style="margin-top:15px; text-align:right;"><button class="primary-button" onclick="fbSaveRates()">Save Global Rates</button></div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 window.fbSaveRates = function() {
