@@ -1921,7 +1921,7 @@ function generateExcelReport(username, month) {
     var prof = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
     var userHouse = prof.house || 'ALL';
     var userVillage = prof.village || 'ALL';
-    (state.categories || []).forEach(function(c) {
+    categories.forEach(function(c) {
       var allowAmt = allowance(c.id, month, userHouse, userVillage) || 0;
       cat1Allowances[c.name] = allowAmt;
     });
