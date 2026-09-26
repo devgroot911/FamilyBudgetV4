@@ -2137,6 +2137,7 @@ function generateExcelReport(username, month) {
     ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
     ws2Rows.push({hpt: 18});
     
+    var cat2Keys = Object.keys(cat2Totals).sort(function(a,b){return cat2Totals[b]-cat2Totals[a]});
     var largestC = cat2Keys[0] || "None";
     ws2Data.push([ createCell("Largest Sub-category", {font: reportTheme.fonts.metaLabel}), createCell(largestC, {font: reportTheme.fonts.metaVal}) ]);
     ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:3}});
