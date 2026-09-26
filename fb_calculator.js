@@ -1179,7 +1179,7 @@ function fbValidateAndCalculateBulk(workbook) {
 function fbShowBulkSummary(allCalcs, allPayloads) {
   window.fbPendingBulkPayloads = allPayloads;
   
-  var html = '<div id="fb-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">' +
+  var html = '<div id="fb-bulk-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; display:flex; justify-content:center; align-items:center;">' +
     '<div class="panel" style="width:90%; max-width:800px; max-height:90vh; overflow-y:auto; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">' +
       '<h2 style="margin-top:0;">Bulk Calculation Summary</h2>' +
       '<p>Review the calculated end balances below. If they look correct, click Confirm to save all houses to the cloud.</p>' +
@@ -1201,7 +1201,7 @@ function fbShowBulkSummary(allCalcs, allPayloads) {
           
   html += '</tbody></table></div>' +
       '<div style="display:flex; justify-content:flex-end; gap:10px;">' +
-        '<button class="secondary-button" onclick="document.body.removeChild(document.getElementById(\'fb-modal-overlay\'))">Cancel</button>' +
+        '<button class="secondary-button" onclick="document.body.removeChild(document.getElementById(\'fb-bulk-modal\'))">Cancel</button>' +
         '<button class="primary-button" onclick="fbConfirmBulkSave()">Confirm & Save to Cloud</button>' +
       '</div>' +
     '</div>' +
@@ -1216,7 +1216,7 @@ window.fbConfirmBulkSave = function() {
   if (!window.fbPendingBulkPayloads || window.fbPendingBulkPayloads.length === 0) return;
   
   // Close modal
-  var overlay = document.getElementById('fb-modal-overlay');
+  var overlay = document.getElementById('fb-bulk-modal');
   if (overlay) document.body.removeChild(overlay);
   
   fbAlert('Saving ' + window.fbPendingBulkPayloads.length + ' records to cloud...');
