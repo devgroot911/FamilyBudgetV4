@@ -31,7 +31,9 @@ var style = document.createElement('style');
 style.innerHTML = 
   '.fb-modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:999999; padding:20px 10px; box-sizing:border-box; overflow-y:auto !important; -webkit-overflow-scrolling:touch; }' +
   '.fb-modal-content { margin:20px auto 60px auto; background:#fff; width:100%; max-width:700px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.25); overflow:visible !important; max-height:none !important; height:auto !important; }' +
-  '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; border-radius:8px 8px 0 0; }' +
+  '.fb-modal-header { background:#fafafa; border-bottom:1px solid #eaeaea; padding:15px 20px; font-weight:bold; font-size:16px; color:#333; border-radius:8px 8px 0 0; display:flex; justify-content:space-between; align-items:center; }' +
+  '.fb-modal-close { background:none; border:none; font-size:22px; font-weight:bold; color:#999; cursor:pointer; padding:0; line-height:1; }' +
+  '.fb-modal-close:hover { color:#333; }' +
   '.fb-modal-body { padding:20px; font-size:13px; line-height:1.4; color:#444; overflow:visible !important; max-height:none !important; height:auto !important; }' +
   '.fb-modal-footer { background:#fafafa; border-top:1px solid #eaeaea; padding:15px 20px; text-align:right; border-radius:0 0 8px 8px; }' +
   
@@ -67,7 +69,7 @@ document.head.appendChild(style);
 // Custom UI Popups
 // ------------------------------------------------------------------
 window.fbAlert = function(msg, callback) {
-   var html = '<div class="fb-modal-header">Notification</div>' +
+   var html = '<div class="fb-modal-header"><span>Notification</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
               '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\n/g, '<br>') + '</p></div>' +
               '<div class="fb-modal-footer">' +
               '<button class="primary-button" id="fb-alert-btn">OK</button></div>';
@@ -82,10 +84,10 @@ window.fbAlert = function(msg, callback) {
 };
 
 window.fbConfirm = function(msg, onYes, onNo) {
-   var html = '<div class="fb-modal-header">Please Confirm</div>' +
+   var html = '<div class="fb-modal-header"><span>Please Confirm</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
               '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\n/g, '<br>') + '</p></div>' +
               '<div class="fb-modal-footer">' +
-              '<button class="ghost-button" id="fb-confirm-no" style="margin-right:15px;">Cancel</button>' +
+              '<button class="ghost-button" id="fb-confirm-no" style="margin-right:15px;">Go Back</button>' +
               '<button class="primary-button" id="fb-confirm-yes">Proceed</button></div>';
    document.getElementById('fb-modal-content').innerHTML = html;
    document.body.style.overflow = 'hidden';
@@ -691,7 +693,7 @@ window.fbReviewAndSave = function(houseNo) {
   if (calcs.household_balance < 0) overdrafts.push({ field: 'household_balance', label: 'Household', amount: Math.abs(calcs.household_balance) });
   
   if (overdrafts.length > 0) {
-     var html = '<div class="fb-modal-header" style="color:#c0392b;">Insufficient Funds Detected</div>' +
+     var html = '<div class="fb-modal-header" style="color:#c0392b;"><span>Insufficient Funds Detected</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
                 '<div class="fb-modal-body">' +
                 '<p style="margin-top:0;">Your requested actual withdrawals exceed the available monthly allocation and the previous rollover balance.</p>' +
                 
@@ -742,7 +744,7 @@ window.fbReviewAndSave = function(houseNo) {
                 '</select></div>';
      });
      html += '</div><div class="fb-modal-footer">' +
-             '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px;">Cancel</button>' +
+             '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px;">Go Back</button>' +
              '<button class="primary-button" onclick="fbApplyOverdrafts(\''+houseNo+'\')">Apply Transfers & Continue</button>' +
              '</div>';
      
@@ -806,7 +808,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
   window.fbState._activeTransfers = transferLog;
   
   var html = 
-    '<div class="fb-modal-header">Review & Save: House ' + houseNo + '</div>' +
+    '<div class="fb-modal-header"><span>Review & Save: House ' + houseNo + '</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';">&times;</button></div>' +
     '<div class="fb-modal-body">' +
       '<div class="fb-box" style="margin-bottom:15px; border-left:3px solid #f39c12;"><h4>Permanent Historical Snapshot</h4>' +
         '<p style="font-size:13px; color:#555; margin:0;">Saving this will permanently lock <strong>' + houseData.mother_name + '</strong> as the Mother for this month\'s ledger.</p>' +
@@ -870,7 +872,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
       '</div>' +
     '</div>' +
     '<div class="fb-modal-footer">' +
-      '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px;">Cancel</button>' +
+      '<button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\'; document.body.style.overflow=\'\';" style="margin-right:15px;">Go Back</button>' +
       '<button class="primary-button" onclick="fbConfirmSaveData(\''+houseNo+'\')">Confirm & Save</button>' +
     '</div>';
     
