@@ -1002,7 +1002,7 @@ window.fbConfirmSaveData = function(houseNo) {
     if(hIdx > -1) window.fbState.historicalCounts[hIdx] = res.data; else window.fbState.historicalCounts.push(res.data);
     
     fbAlert('Data explicitly saved to database with permanent mother snapshot!');
-    if (typeof sendNotification === 'function') sendNotification(window.fbState.activeVillage, "Manually updated budget records for House " + houseNo);
+    if (typeof sendNotification === 'function') sendNotification(window.fbState.activeVillage, "Manually updated budget records for House " + houseNo, "HOUSE:" + houseNo);
     window.fbState.hasUnsavedChanges = false;
     fbRenderSubView();
   }).catch(function(e) {
@@ -1018,7 +1018,7 @@ window.fbConfirmSaveData = function(houseNo) {
           if(hIdx > -1) window.fbState.historicalCounts[hIdx] = res2.data; else window.fbState.historicalCounts.push(res2.data);
           
           fbAlert('Data saved successfully via JSON fallback!\n\n(The explicit balance columns are missing from Supabase, but your data is safe inside the remarks column. Run the final SQL to add explicit columns later).');
-          if (typeof sendNotification === 'function') sendNotification(window.fbState.activeVillage, "Manually updated budget records for House " + houseNo);
+          if (typeof sendNotification === 'function') sendNotification(window.fbState.activeVillage, "Manually updated budget records for House " + houseNo, "HOUSE:" + houseNo);
           window.fbState.hasUnsavedChanges = false;
           fbRenderSubView();
        }).catch(function(err2) {
@@ -1566,8 +1566,8 @@ window.fbExecuteCrossHouseTransfer = function() {
      
      // Notifications
      if (typeof sendNotification === 'function') {
-         sendNotification(window.fbState.activeVillage, "Accountant transfer of LKR " + amt + " completed for House " + sHouse);
-         if (sHouse !== dHouse) sendNotification(window.fbState.activeVillage, "House " + dHouse + " received Accountant transfer of LKR " + amt);
+         sendNotification(window.fbState.activeVillage, "Accountant transfer of LKR " + amt + " completed for House " + sHouse, "HOUSE:" + sHouse);
+         if (sHouse !== dHouse) sendNotification(window.fbState.activeVillage, "House " + dHouse + " received Accountant transfer of LKR " + amt, "HOUSE:" + dHouse);
      }
      
      document.getElementById('xh-amount').value = '';

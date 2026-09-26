@@ -1963,16 +1963,22 @@ function fetchNotifications() {
   if (sessionStorage.getItem('logged_in') !== 'true') return;
   var role = (sessionStorage.getItem('role') || 'mother').toLowerCase();
   var myVillage = sessionStorage.getItem('village') || '';
+  var myHouse = sessionStorage.getItem('house') || '';
   var username = sessionStorage.getItem('username') || '';
   
-  var isGlobal = (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1 || role === 'national_director');
+  var isGlobal = (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1 || role === 'national_director' || role.indexOf('assistant') !== -1);
+  var isVillageDirector = (role.indexOf('village_director') !== -1 || role.indexOf('director') !== -1) && !isGlobal;
   
   var query = supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
   
   if (!isGlobal) {
-    // Village specific or user specific
-    // In Supabase JS v2, we can use an OR filter
-    query = query.or('target_village.eq.' + myVillage + ',target_village.eq.ALL,target_user.eq.' + username);
+    if (isVillageDirector) {
+      query = query.or('target_village.eq.' + myVillage + ',target_village.eq.ALL,target_user.eq.' + username);
+    } else {
+      // Mother / YCCW
+      var houseQuery = myHouse ? 'target_user.eq.HOUSE:' + myHouse : 'target_user.eq.NONE';
+      query = query.or(houseQuery + ',target_village.eq.ALL,target_user.eq.' + username);
+    }
   }
   
   query.then(function(res) {
