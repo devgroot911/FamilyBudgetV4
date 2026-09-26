@@ -158,8 +158,94 @@ function setPublishedStatus(username, month, isPub) {
 
 function allowance(categoryId, period) {
   var p = period || currentMonth();
-  var user = sessionStorage.getItem('username') || 'mother';
-  return Number(state.allowances[user + '_' + p + '_' + categoryId] || state.allowances[p + '_' + categoryId] || 0);
+  if (!window.fbState || !window.fbState.historicalCounts || typeof calculateHouseBudget !== 'function') return 0;
+  
+  var role = (sessionStorage.getItem('role') || '').toLowerCase();
+  var isGlobal = (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1 || role === 'national_director' || role.indexOf('assistant') !== -1);
+  var myVillage = sessionStorage.getItem('village');
+  var myHouse = sessionStorage.getItem('house');
+  
+  var pts = p.split('-');
+  var yr = parseInt(pts[0], 10), mo = parseInt(pts[1], 10);
+  
+  var validRows = window.fbState.historicalCounts.filter(function(r) { return r.year === yr && r.month === mo; });
+  
+  if (!isGlobal) {
+    if (myVillage) validRows = validRows.filter(function(r) { return r.village === myVillage; });
+    if (myHouse && role.indexOf('director') === -1) {
+       validRows = validRows.filter(function(r) { return String(r.house_no) === String(myHouse); });
+    }
+  }
+  
+  var sum = 0;
+  validRows.forEach(function(r) {
+    var dummyPrev = { food: r.open_food || 0, clothing: r.open_cloth || 0, household: r.open_hh || 0, interest: r.open_int || 0 };
+    var mAdj = { food: r.manual_adj_food || 0, clothing: r.manual_adj_cloth || 0, household: r.manual_adj_hh || 0, interest: r.manual_adj_int || 0 };
+    if (r.remarks) {
+       try {
+          var rem = JSON.parse(r.remarks);
+          if (rem.manual_adjustments) {
+             mAdj.food = rem.manual_adjustments.food || mAdj.food;
+             mAdj.clothing = rem.manual_adjustments.cloth || mAdj.clothing;
+             mAdj.household = rem.manual_adjustments.hh || mAdj.household;
+             mAdj.interest = rem.manual_adjustments.int || mAdj.interest;
+          }
+       } catch(e) {}
+    }
+    var calcs = calculateHouseBudget(r, window.fbState.rateVariables, dummyPrev, mAdj);
+    
+    if (categoryId === 1) sum += calcs.total_food;
+    else if (categoryId === 2) sum += calcs.total_hh;
+    else if (categoryId === 3) sum += calcs.total_clothing;
+  });
+  
+  return sum;
+}
+
+function getFbBalance(categoryId, period) {
+  var p = period || currentMonth();
+  if (!window.fbState || !window.fbState.historicalCounts || typeof calculateHouseBudget !== 'function') return 0;
+  
+  var role = (sessionStorage.getItem('role') || '').toLowerCase();
+  var isGlobal = (role.indexOf('admin') !== -1 || role.indexOf('accountant') !== -1 || role === 'national_director' || role.indexOf('assistant') !== -1);
+  var myVillage = sessionStorage.getItem('village');
+  var myHouse = sessionStorage.getItem('house');
+  
+  var pts = p.split('-');
+  var yr = parseInt(pts[0], 10), mo = parseInt(pts[1], 10);
+  
+  var validRows = window.fbState.historicalCounts.filter(function(r) { return r.year === yr && r.month === mo; });
+  
+  if (!isGlobal) {
+    if (myVillage) validRows = validRows.filter(function(r) { return r.village === myVillage; });
+    if (myHouse && role.indexOf('director') === -1) {
+       validRows = validRows.filter(function(r) { return String(r.house_no) === String(myHouse); });
+    }
+  }
+  
+  var sum = 0;
+  validRows.forEach(function(r) {
+    var dummyPrev = { food: r.open_food || 0, clothing: r.open_cloth || 0, household: r.open_hh || 0, interest: r.open_int || 0 };
+    var mAdj = { food: r.manual_adj_food || 0, clothing: r.manual_adj_cloth || 0, household: r.manual_adj_hh || 0, interest: r.manual_adj_int || 0 };
+    if (r.remarks) {
+       try {
+          var rem = JSON.parse(r.remarks);
+          if (rem.manual_adjustments) {
+             mAdj.food = rem.manual_adjustments.food || mAdj.food;
+             mAdj.clothing = rem.manual_adjustments.cloth || mAdj.clothing;
+             mAdj.household = rem.manual_adjustments.hh || mAdj.household;
+             mAdj.interest = rem.manual_adjustments.int || mAdj.interest;
+          }
+       } catch(e) {}
+    }
+    var calcs = calculateHouseBudget(r, window.fbState.rateVariables, dummyPrev, mAdj);
+    
+    if (categoryId === 1) sum += calcs.food_balance;
+    else if (categoryId === 2) sum += calcs.household_balance;
+    else if (categoryId === 3) sum += calcs.clothing_balance;
+  });
+  
+  return sum;
 }
 function spent(categoryId, period) {
   var p = period || currentMonth();
@@ -413,7 +499,8 @@ function renderDashboard() {
   var currentMonthExpenses = visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; });
   var totalSpent = currentMonthExpenses.reduce(function(s, i) { return s + Number(i.total); }, 0);
   var totalAllowance = categories.reduce(function(s, c) { return s + allowance(c.id); }, 0);
-  var remaining = totalAllowance - totalSpent;
+  var trueRemaining = categories.reduce(function(s, c) { return s + getFbBalance(c.id); }, 0);
+  var remaining = trueRemaining !== 0 ? trueRemaining : (totalAllowance - totalSpent);
   var recent = visibleExpenses.slice().sort(function(a, b) { return b.date.localeCompare(a.date); }).slice(0, 10);
   var todaySpent = visibleExpenses.filter(function(i) { return i.date === today(); }).reduce(function(s, i) { return s + Number(i.total); }, 0);
   
@@ -881,53 +968,51 @@ function renderRecords() {
 
 function renderAllowances() {
   var cm = selectedAllowanceMonth;
-  document.querySelector('#view-allowances').innerHTML =
-    '<div class="grid two-col">' +
+  var role = (sessionStorage.getItem('role') || '').toLowerCase();
+  
+  var html = '<div class="grid two-col">' +
       '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Monthly Allowance Budget</h2><small>Set a budget for ' + cm + '</small></div></div>' +
-        '<form id="allowance-form">' +
-          '<div class="field"><label for="allowance-month">Budget month</label><input id="allowance-month" type="month" value="' + cm + '"></div>' +
-          categories.map(function(c, i) {
-            return '<div class="field"><label for="allowance-' + c.id + '">' + c.name + ' (LKR)</label><input id="allowance-' + c.id + '" type="number" min="0" step="0.01" value="' + (allowance(c.id, cm) || 0) + '"></div>';
-          }).join('') +
-          '<button class="primary-button" type="submit">Save allowances</button>' +
-        '</form>' +
-      '</div>' +
+        '<div class="section-heading"><div><h2>Family Budget Overview</h2><small>Calculated allowances for ' + cm + '</small></div></div>' +
+        '<div style="margin-bottom: 20px;">' +
+          '<div class="field"><label for="allowance-month">View Month</label><input id="allowance-month" type="month" value="' + cm + '"></div>' +
+        '</div>' +
+        '<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">' +
+           '<h4 style="margin-top:0; color:#2c3e50;">Monthly Allocations</h4>';
+           
+  categories.forEach(function(c) {
+      html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;">' +
+              '<span>' + c.name + ' Budget:</span><strong>' + money(allowance(c.id, cm)) + '</strong></div>';
+  });
+  
+  html += '</div>' +
+          '<div style="background:#eaf4fc; padding:15px; border-radius:8px;">' +
+           '<h4 style="margin-top:0; color:#2980b9;">Official Available Balances</h4>' +
+           '<small style="display:block; margin-bottom:10px; color:#7f8c8d;">(Includes carry-over savings & transfers)</small>';
+           
+  categories.forEach(function(c) {
+      html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #bbd6ef; padding-bottom:4px;">' +
+              '<span>' + c.name + ' Balance:</span><strong style="color:#27ae60;">' + money(getFbBalance(c.id, cm)) + '</strong></div>';
+  });
+  
+  html += '</div></div>' +
       '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Month at a glance</h2><small>Allowance vs actual spending</small></div></div>' +
-        categories.map(function(c, i) {
+        '<div class="section-heading"><div><h2>Month at a glance</h2><small>Allowance vs actual spending</small></div></div>';
+        
+  html += categories.map(function(c, i) {
           var budget = allowance(c.id, cm) || 0;
-            var v = spent(c.id, cm);
-            var pctStr = budget > 0 ? Math.round((v / budget) * 100) + "%" : "0%";
-            var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
-            return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + pctStr + '</span></div><div class="progress-track"><div class="progress-fill' + (c.id === 2 ? ' mint' : c.id === 3 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div><p class="muted">' + money(v) + ' spent from ' + money(budget) + '</p></div>';
-        }).join('') +
-      '</div>' +
-    '</div>';
+          var v = spent(c.id, cm);
+          var pctStr = budget > 0 ? Math.round((v / budget) * 100) + "%" : "0%";
+          var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
+          return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + ' Spending</span><span>' + pctStr + '</span></div><div class="progress-track"><div class="progress-fill' + (c.id === 2 ? ' mint' : c.id === 3 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div><p class="muted">' + money(v) + ' spent from ' + money(budget) + ' monthly budget</p></div>';
+  }).join('');
+  
+  html += '</div></div>';
+
+  document.querySelector('#view-allowances').innerHTML = html;
 
   document.querySelector('#allowance-month').addEventListener('change', function(event) {
     selectedAllowanceMonth = event.target.value || currentMonth();
     renderAllowances();
-  });
-
-  document.querySelector('#allowance-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    var selectedMonth = document.querySelector('#allowance-month').value || cm;
-    var user = sessionStorage.getItem('username') || 'mother';
-    var upserts = [];
-    categories.forEach(function(c) {
-      var val = Number(document.querySelector('#allowance-' + c.id).value || 0);
-      state.allowances[user + '_' + selectedMonth + '_' + c.id] = val;
-      upserts.push({ user_username: user, month: selectedMonth, category_id: c.id, amount: val });
-    });
-    save();
-    supabase.from('allowances').upsert(upserts, { onConflict: 'user_username,month,category_id' })
-      .then(function(res) {
-        if (res.error) throw res.error;
-        notify('Allowances saved securely to cloud');
-        render();
-      })
-      .catch(function(err) { console.error(err); notify('Failed to save to cloud'); });
   });
 }
 
@@ -1746,6 +1831,11 @@ function generateExcelReport(username, month) {
         var al = cat1Allowances[k] || 0;
         var ex = cat1Totals[k] || 0;
         var bal = al - ex;
+        var matchedCat = categories.find(function(c) { return c.name === k; });
+        if (matchedCat) {
+            var fbBal = getFbBalance(matchedCat.id, currentMonth(start));
+            if (fbBal !== 0) bal = fbBal; // Override simple math with official DB carry-over balance
+        }
         totalAl += al; totalEx += ex;
 
         var font = reportTheme.fonts.body;
