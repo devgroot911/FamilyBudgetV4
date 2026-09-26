@@ -1954,17 +1954,15 @@ function generateExcelReport(username, month) {
       summaryCatKeys.forEach(function(k) {
         var al = cat1Allowances[k] || 0;
         var ex = cat1Totals[k] || 0;
-        var bal = al - ex;
         var fbWithdrawn = 0;
         var matchedCat = categories.find(function(c) { return c.name === k; });
         if (matchedCat) {
             var prof2 = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
             var uh = prof2.house || 'ALL';
             var uv = prof2.village || 'ALL';
-            var fbBal = getFbBalance(matchedCat.id, month, uh, uv);
             fbWithdrawn = getFbWithdrawn(matchedCat.id, month, uh, uv);
-            if (fbBal !== 0) bal = fbBal; // Override simple math with official DB carry-over balance
         }
+        var bal = fbWithdrawn - ex;
         totalAl += al; totalEx += ex; totalWithdrawn += fbWithdrawn;
 
         var font = reportTheme.fonts.body;
@@ -1983,7 +1981,7 @@ function generateExcelReport(username, month) {
         ws1Rows.push({hpt: 16});
       });
 
-      var balTotal = totalAl - totalEx;
+      var balTotal = totalWithdrawn - totalEx;
       ws1Data.push([
         createCell("TOTAL", {font: reportTheme.fonts.smallB, alignment: {horizontal: "right"}}), null,
         createCell(totalAl, {font: reportTheme.fonts.smallB, alignment: {horizontal: "right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency),
@@ -2066,44 +2064,56 @@ function generateExcelReport(username, month) {
     
     // --- SHEET 2: Summary & Insights ---
     var ws2Data = [], ws2Merges = [], ws2Rows = [];
-    writeTitleBlock(ws2Data, ws2Merges, ws2Rows, meta, 2);
+    writeTitleBlock(ws2Data, ws2Merges, ws2Rows, meta, 3);
     
     ws2Data.push([ createCell("Grand Total Expenditure", {font: reportTheme.fonts.section}) ]);
     ws2Data.push([ 
       createCell("", {fill: {fgColor: {rgb: reportTheme.palette.LIGHT_BAND}}, border: reportTheme.borders.box}), 
       createCell(grandTotal, {font: {name: "Calibri", sz:16, bold:true, color:{rgb:reportTheme.palette.TEXT_DARK}}, fill: {fgColor: {rgb: reportTheme.palette.LIGHT_BAND}}, border: reportTheme.borders.box, alignment: {horizontal:"center"}}, 'n', reportTheme.formats.currency) 
     ]);
-    ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:2}});
+    ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:3}});
     ws2Rows.push({hpt: 18}, {hpt: 30});
     ws2Data.push([]); ws2Rows.push({hpt: 12});
     
-    ws2Data.push([ createCell("Sub-category Summary", {font: reportTheme.fonts.section}) ]);
+    ws2Data.push([ createCell("Category Withdrawn Summary", {font: reportTheme.fonts.section}) ]);
     ws2Rows.push({hpt: 18});
     
     ws2Data.push([
-      createCell("Sub-category", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll}),
-      createCell("Total Expenditure", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll, alignment:{horizontal:"right"}}),
-      createCell("% of Total", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll, alignment:{horizontal:"right"}})
+      createCell("Category", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll}),
+      createCell("Actual Withdrawn", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll, alignment:{horizontal:"right"}}),
+      createCell("Expenditure", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll, alignment:{horizontal:"right"}}),
+      createCell("Balance", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll, alignment:{horizontal:"right"}})
     ]);
     ws2Rows.push({hpt: 20});
     
-    var cat2Keys = Object.keys(cat2Totals).sort(function(a,b){return cat2Totals[b]-cat2Totals[a]});
-    if(cat2Keys.length === 0) {
+    if(summaryCatKeys.length === 0) {
        ws2Data.push([createCell("LKR 0.00 — No category data.", {font: reportTheme.fonts.body} )]);
-       ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+       ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
        ws2Rows.push({hpt: 18});
     } else {
-       cat2Keys.forEach(function(k, i) {
-         var pct = grandTotal ? (cat2Totals[k]/grandTotal) : 0;
+       summaryCatKeys.forEach(function(k, i) {
+         var ex = cat1Totals[k] || 0;
+         var fbWithdrawn = 0;
+         var matchedCat = categories.find(function(c) { return c.name === k; });
+         if (matchedCat) {
+            var prof2 = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
+            var uh = prof2.house || 'ALL';
+            var uv = prof2.village || 'ALL';
+            fbWithdrawn = getFbWithdrawn(matchedCat.id, month, uh, uv);
+         }
+         var bal = fbWithdrawn - ex;
+         
          var fill = i % 2 === 0 ? {fgColor: {rgb: reportTheme.palette.LIGHT_BAND}} : null;
          var styleL = {font: reportTheme.fonts.body, border: reportTheme.borders.bottomThin};
          var styleR = {font: reportTheme.fonts.body, border: reportTheme.borders.bottomThin, alignment:{horizontal:"right"}};
-         if(fill) { styleL.fill = fill; styleR.fill = fill; }
+         var styleWarn = {font: bal < 0 ? reportTheme.fonts.warn : reportTheme.fonts.body, border: reportTheme.borders.bottomThin, alignment:{horizontal:"right"}};
+         if(fill) { styleL.fill = fill; styleR.fill = fill; styleWarn.fill = fill; }
          
          ws2Data.push([
            createCell(k, styleL),
-           createCell(cat2Totals[k], styleR, 'n', reportTheme.formats.currency),
-           createCell(pct, styleR, 'n', reportTheme.formats.pct)
+           createCell(fbWithdrawn, styleR, 'n', reportTheme.formats.currency),
+           createCell(ex, styleR, 'n', reportTheme.formats.currency),
+           createCell(bal, styleWarn, 'n', reportTheme.formats.currency)
          ]);
          ws2Rows.push({hpt: 18});
        });
@@ -2111,40 +2121,41 @@ function generateExcelReport(username, month) {
     
     ws2Data.push([
       createCell("TOTAL", {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}}),
-      createCell(grandTotal, {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency),
-      createCell(1, {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.pct)
+      createCell(totalWithdrawn, {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency),
+      createCell(totalEx, {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency),
+      createCell(balTotal, {font: balTotal < 0 ? reportTheme.fonts.warn : reportTheme.fonts.smallB, alignment:{horizontal:"right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency)
     ]);
     ws2Rows.push({hpt: 20});
     ws2Data.push([]); ws2Rows.push({hpt: 12});
     
     ws2Data.push([ createCell("AI Insights", {font: reportTheme.fonts.section, border: reportTheme.borders.bottomAccent}) ]);
-    ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+    ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
     ws2Rows.push({hpt: 18});
     
     var largestC = cat2Keys[0] || "None";
     ws2Data.push([ createCell("Largest Sub-category", {font: reportTheme.fonts.metaLabel}), createCell(largestC, {font: reportTheme.fonts.metaVal}) ]);
-    ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:2}});
+    ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:3}});
     ws2Rows.push({hpt: 18});
     
     ws2Data.push([]); ws2Rows.push({hpt: 12});
     ws2Data.push([ createCell("Data Quality Flags", {font: reportTheme.fonts.section, border: reportTheme.borders.bottomAccent}) ]);
-    ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+    ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
     ws2Rows.push({hpt: 18});
     
     if (zeroCount === 0 && list.length > 0 && cat2Keys.indexOf("Uncategorised") === -1) {
       ws2Data.push([ createCell("✓ No anomalies detected.", {font: reportTheme.fonts.ok}) ]);
-      ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+      ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
     } else if (list.length === 0) {
       ws2Data.push([ createCell("— No data to analyze.", {font: reportTheme.fonts.body}) ]);
-      ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+      ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
     } else {
       if (zeroCount > 0) {
         ws2Data.push([ createCell("⚠ " + zeroCount + " entries have LKR 0.00 total.", {font: reportTheme.fonts.warn, fill: {fgColor: {rgb: reportTheme.palette.WARN_FILL}}}) ]);
-        ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+        ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
       }
       if (cat2Keys.indexOf("Uncategorised") !== -1) {
         ws2Data.push([ createCell("⚠ Contains uncategorised items.", {font: reportTheme.fonts.warn, fill: {fgColor: {rgb: reportTheme.palette.WARN_FILL}}}) ]);
-        ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+        ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
       }
     }
     ws2Rows.push({hpt: 18});
@@ -2159,23 +2170,21 @@ function generateExcelReport(username, month) {
     
     if (fbRow && fbRow.calcs) {
        ws2Data.push([ createCell("Balances and Calculation Breakdown", {font: reportTheme.fonts.section, border: reportTheme.borders.bottomAccent}) ]);
-       ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:2}});
+       ws2Merges.push({s:{r: ws2Data.length-1, c:0}, e:{r: ws2Data.length-1, c:3}});
        ws2Rows.push({hpt: 20});
        
        var addRow = function(label, val, isMoney, isString) {
           ws2Data.push([ createCell(label, {font: reportTheme.fonts.body}), createCell(val, {font: reportTheme.fonts.body, alignment:{horizontal:"right"}}, isString ? 's' : 'n', isMoney ? reportTheme.formats.currency : undefined) ]);
-          ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:2}});
+          ws2Merges.push({s:{r: ws2Data.length-1, c:1}, e:{r: ws2Data.length-1, c:3}});
           ws2Rows.push({hpt: 16});
        };
-       addRow("Children Under 12", fbRow.child_u12, false, false);
-       addRow("Children Over 12", fbRow.child_o12, false, false);
-       addRow("Mother / Aunt", (fbRow.mother_count || 0) + " / " + (fbRow.aunt_amount > 0 ? "Yes" : "No"), false, true);
-       addRow("Total Food Budget", fbRow.calcs.total_food, true, false);
-       addRow("Total Household Budget", fbRow.calcs.total_hh, true, false);
-       addRow("Total Clothing Budget", fbRow.calcs.total_clothing, true, false);
-       if (fbRow.calcs.adjustment) addRow("Manual Adjustment", fbRow.calcs.adjustment, true, false);
-       if (fbRow.calcs.festival) addRow("Festival Allowance", fbRow.calcs.festival, true, false);
-       if (fbRow.calcs.food_balance) addRow("Food End Balance (incl. savings)", fbRow.calcs.food_balance, true, false);
+       if (fbRow.calcs.food_balance !== undefined) addRow("Food End Balance (incl. savings)", fbRow.calcs.food_balance, true, false);
+       if (fbRow.calcs.clothing_balance !== undefined) addRow("Clothing End Balance", fbRow.calcs.clothing_balance, true, false);
+       if (fbRow.calcs.household_balance !== undefined) addRow("Household End Balance", fbRow.calcs.household_balance, true, false);
+       if (fbRow.calcs.savings !== undefined) addRow("Savings", fbRow.calcs.savings, true, false);
+       if (fbRow.calcs.interest_balance !== undefined) addRow("Interest Balance", fbRow.calcs.interest_balance, true, false);
+       if (fbRow.calcs.interest_earned !== undefined) addRow("Interest Earned", fbRow.calcs.interest_earned, true, false);
+       if (fbRow.calcs.bank_charges !== undefined) addRow("Bank Charges (Arrears)", fbRow.calcs.bank_charges, true, false);
        
        ws2Data.push([]); ws2Rows.push({hpt: 18});
     }
@@ -2185,7 +2194,7 @@ function generateExcelReport(username, month) {
     var ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
     ws2['!merges'] = ws2Merges;
     ws2['!rows'] = ws2Rows;
-    ws2['!cols'] = [{wch:25}, {wch:20}, {wch:20}];
+    ws2['!cols'] = [{wch:20}, {wch:18}, {wch:18}, {wch:18}];
     ws2['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 };
     ws2['!margins'] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
     ws2['!views'] = [{showGridLines: false}];
