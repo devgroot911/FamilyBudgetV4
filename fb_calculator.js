@@ -342,7 +342,30 @@ function loadVillageData() {
                    c.open_hh = r.opening.hh || 0;
                    c.open_int = r.opening.int || 0;
                }
+               if (r.ending) {
+                   c.food_balance = r.ending.food || 0;
+                   c.clothing_balance = r.ending.cloth || 0;
+                   c.household_balance = r.ending.hh || 0;
+                   c.interest_balance = r.ending.int || 0;
+               }
            } catch(e) {}
+       }
+       
+       // Fallback: If ending balances are completely missing because the SQL migration wasn't run, 
+       // dynamically reconstruct them by re-running the math logic for that row!
+       if (c.food_balance === undefined) {
+           var dummyPrev = {
+               food: c.open_food || 0,
+               clothing: c.open_cloth || 0,
+               household: c.open_hh || 0,
+               interest: c.open_int || 0,
+               isManual: true // assume opening is reliable
+           };
+           var calcs = calculateHouseBudget(c, window.fbState.rateVariables, dummyPrev);
+           c.food_balance = calcs.food_balance;
+           c.clothing_balance = calcs.clothing_balance;
+           c.household_balance = calcs.household_balance;
+           c.interest_balance = calcs.interest_balance;
        }
     });
     
@@ -923,7 +946,20 @@ window.fbConfirmSaveData = function(houseNo) {
      openingObj = { food: existing.open_food, cloth: existing.open_cloth, hh: existing.open_hh, int: existing.open_int };
   }
   
-  payload.remarks = JSON.stringify({ savings: calcs.savings, first_w: calcs.first_withdrawal, second_w: calcs.second_withdrawal, mother: houseData.mother_name, transfers: transferLog, opening: openingObj });
+  payload.remarks = JSON.stringify({ 
+    savings: calcs.savings, 
+    first_w: calcs.first_withdrawal, 
+    second_w: calcs.second_withdrawal, 
+    mother: houseData.mother_name, 
+    transfers: transferLog, 
+    opening: openingObj,
+    ending: {
+       food: calcs.food_balance,
+       cloth: calcs.clothing_balance,
+       hh: calcs.household_balance,
+       int: calcs.interest_balance
+    }
+  });
   
   delete payload.open_food;
   delete payload.open_cloth;
@@ -1169,7 +1205,20 @@ function fbValidateAndCalculateBulk(workbook) {
         payload.open_int = d.openingObj.int;
     }
     
-    payload.remarks = JSON.stringify({ savings: calcs.savings, first_w: calcs.first_withdrawal, second_w: calcs.second_withdrawal, mother: payload.mother_name, transfers: [], opening: d.openingObj });
+    payload.remarks = JSON.stringify({ 
+      savings: calcs.savings, 
+      first_w: calcs.first_withdrawal, 
+      second_w: calcs.second_withdrawal, 
+      mother: payload.mother_name, 
+      transfers: [], 
+      opening: d.openingObj,
+      ending: {
+         food: calcs.food_balance,
+         cloth: calcs.clothing_balance,
+         hh: calcs.household_balance,
+         int: calcs.interest_balance
+      }
+    });
     
     // Copy counts to payload
     Object.keys(d.counts).forEach(function(k) { payload[k] = d.counts[k]; });
