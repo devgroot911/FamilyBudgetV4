@@ -16,7 +16,7 @@ window.fbState = {
   editingHouseId: null
 };
 
-// Updated DEFAULT_RATES to perfectly match the SOS Children's Village Piliyandala Excel Sheet
+// Rates matched exactly to SOS Children's Village Piliyandala Excel Sheet
 var DEFAULT_RATES = {
   food_o12_rate: 6300,
   food_u12_rate: 4500,
@@ -38,10 +38,15 @@ function calculateHouseBudget(houseCounts, rates) {
     return DEFAULT_RATES[key];
   };
   
-  var food_o12_amount = getRate('food_o12_rate') * (houseCounts.food_o12 || 0);
-  var food_u12_amount = getRate('food_u12_rate') * (houseCounts.food_u12 || 0);
-  var clothing_o12_amount = getRate('clothing_o12_rate') * (houseCounts.clothing_o12 || 0);
-  var clothing_u12_amount = getRate('clothing_u12_rate') * (houseCounts.clothing_u12 || 0);
+  // Shared counts for Food and Clothing as requested by user
+  var child_o12 = houseCounts.food_o12 || 0; 
+  var child_u12 = houseCounts.food_u12 || 0;
+  
+  var food_o12_amount = getRate('food_o12_rate') * child_o12;
+  var food_u12_amount = getRate('food_u12_rate') * child_u12;
+  var clothing_o12_amount = getRate('clothing_o12_rate') * child_o12;
+  var clothing_u12_amount = getRate('clothing_u12_rate') * child_u12;
+  
   var household_amount = getRate('household_rate') * (houseCounts.household || 0);
   var mother_amount = getRate('mother_food_rate') * (houseCounts.mother_count || 0);
   var aunt_amount = Number(houseCounts.aunt_amount || 0);
@@ -467,17 +472,17 @@ function fbRenderEntry(container) {
   var hId = window.fbState.editingHouseId || '';
   
   var html = 
-    '<div class="panel" style="margin-bottom: 20px;">' +
-      '<div class="section-heading" style="display:flex; justify-content:space-between; align-items:center;">' +
-        '<div><h2>Data Entry</h2><small>Select Project & House to enter data</small></div>' +
+    '<div class="panel" style="margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eaeaea;">' +
+      '<div class="section-heading" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">' +
+        '<div><h2 style="color:#2c3e50; margin:0 0 5px 0;">Data Entry</h2><small style="color:#7f8c8d;">Select Project & House to enter data</small></div>' +
         '<div style="display:flex; gap:10px;">' +
           '<button class="ghost-button" onclick="fbDownloadTemplate()">&#11015; Excel Summary</button>' +
         '</div>' +
       '</div>' +
       
-      '<div class="grid two-col" style="gap:15px; margin-bottom:15px; background:#f4f9fb; padding:15px; border-radius:5px; border:1px solid #cce5f0;">' +
-        '<div><label style="font-weight:bold;">1. Project / Village:</label>' +
-        '<select onchange="fbSelectProject(this.value)" class="form-control" style="width:100%;">';
+      '<div class="grid two-col" style="gap:20px; background:#f8fbfc; padding:20px; border-radius:8px; border:1px solid #d4e6f1;">' +
+        '<div><label style="font-weight:600; color:#34495e; margin-bottom:8px; display:block;">1. Project / Village:</label>' +
+        '<select onchange="fbSelectProject(this.value)" class="form-control" style="width:100%; padding:10px; border-radius:6px; border:1px solid #bdc3c7;">';
         
   html += '<option value="">-- Select Project --</option>';
   window.fbState.myProjects.forEach(function(proj) {
@@ -486,11 +491,16 @@ function fbRenderEntry(container) {
   });
   html += '</select></div>';
   
-  html += '<div><label style="font-weight:bold;">2. House Number / Mother Name:</label>' +
-      '<select onchange="fbEditHouseForm(this.value)" class="form-control" style="width:100%;">';
+  html += '<div><label style="font-weight:600; color:#34495e; margin-bottom:8px; display:block;">2. House Number / Mother Name:</label>' +
+      '<select onchange="fbEditHouseForm(this.value)" class="form-control" style="width:100%; padding:10px; border-radius:6px; border:1px solid #bdc3c7;">';
   html += '<option value="">-- Select House --</option>';
   
-  var sortedHouses = window.fbState.houses.slice().sort(function(a,b) { return parseInt(a.house_no) - parseInt(b.house_no); });
+  // Filter out houses that don't have a valid mother mapping
+  var validHouses = window.fbState.houses.filter(function(h) {
+     return fbGetMotherName(p.name, h.house_no) !== 'Unassigned';
+  });
+  
+  var sortedHouses = validHouses.sort(function(a,b) { return parseInt(a.house_no) - parseInt(b.house_no); });
   sortedHouses.forEach(function(h) {
      var mName = fbGetMotherName(p.name, h.house_no);
      var sel = hId === h.id ? 'selected' : '';
@@ -505,59 +515,67 @@ function fbRenderEntry(container) {
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
     var motherName = fbGetMotherName(pName, house.house_no);
     
-    html += '<div class="panel" style="margin-bottom:20px; border-left:4px solid #1abc9c;">' +
-      '<h3 style="margin-top:0">Entering Data For: <span style="color:#1abc9c">House ' + house.house_no + ' (' + motherName + ')</span></h3>' +
-      '<hr>' +
-      '<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom:20px;">' +
+    html += '<div class="panel" style="margin-bottom:20px; border-left:5px solid #3498db; background:#ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius:8px; padding:25px;">' +
+      '<h3 style="margin-top:0; color:#2c3e50; font-size:20px; font-weight:600;">Data Entry For: <span style="color:#3498db">House ' + house.house_no + ' (' + motherName + ')</span></h3>' +
+      '<hr style="border:0; border-top:1px solid #ecf0f1; margin:20px 0;">' +
       
-      '<div><label>Food >12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.food_o12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_o12\', this.value)" style="width:100%"></div>' +
-      '<div><label>Food <12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.food_u12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_u12\', this.value)" style="width:100%"></div>' +
-      '<div><label>Mother Count</label><input type="number" min="0" class="form-control" value="' + (counts.mother_count||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'mother_count\', this.value)" style="width:100%"></div>' +
+      '<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom:25px;">' +
       
-      '<div><label>Clothing >12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.clothing_o12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'clothing_o12\', this.value)" style="width:100%"></div>' +
-      '<div><label>Clothing <12 Count</label><input type="number" min="0" class="form-control" value="' + (counts.clothing_u12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'clothing_u12\', this.value)" style="width:100%"></div>' +
-      '<div><label>House Hold Count</label><input type="number" min="0" class="form-control" value="' + (counts.household||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'household\', this.value)" style="width:100%"></div>' +
+      // Merged >12 and <12 inputs that apply to both food and clothing!
+      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Children Over 12</label>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.food_o12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_o12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       
-      '</div>' + 
-      '<div class="grid two-col" style="gap:15px; padding:15px; background:#f9f9f9; border-radius:5px;">' +
+      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Children Under 12</label>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.food_u12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_u12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       
-      '<div><label>Aunts Allowance (LKR)<br><small style="color:#666">Inside calculations supported (e.g. <b>=500+250</b>)</small></label>' +
-      '<input type="text" class="form-control" value="' + (counts.aunt_amount||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'aunt_amount\')" placeholder="=500+200" style="width:100%; border-color:#1abc9c"></div>' +
+      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Mothers in House</label>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.mother_count||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'mother_count\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       
-      '<div><label>Adjustments / Festival (LKR)<br><small style="color:#666">Inside calculations supported (e.g. <b>=1500+500</b>)</small></label>' +
-      '<input type="text" class="form-control" value="' + (counts.adjustment||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'adjustment\')" placeholder="=1500+500" style="width:100%; border-color:#1abc9c"></div>' +
+      '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">House Hold Count</label>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.household||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'household\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       
       '</div>' + 
+      '<div class="grid two-col" style="gap:20px; padding:20px; background:#f4f6f7; border-radius:8px; border:1px solid #e5e8e8;">' +
       
-      '<div style="margin-top:20px; padding:15px; background:#e8f4f8; border-radius:5px; border-left:4px solid #3498db;">' +
-        '<h4 style="margin-top:0">Live Budget Calculation</h4>' +
-        '<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">' +
-          '<div><small>Food Budget:</small><br><strong>LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
-          '<div><small>Total Budget:</small><br><strong>LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
-          '<div><small>Net Payable:</small><br><strong style="color:#1F5C3A">LKR ' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
-          '<div><small>Savings:</small><br><strong>LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+      '<div><label style="font-weight:bold; color:#2c3e50; margin-bottom:8px; display:block;">Aunts Allowance (LKR)<br><small style="color:#7f8c8d; font-weight:normal;">Excel calculations allowed (e.g. <b>=500+250</b>)</small></label>' +
+      '<input type="text" class="form-control" value="' + (counts.aunt_amount||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'aunt_amount\')" placeholder="=500+200" style="width:100%; padding:12px; font-size:16px; border-radius:6px; border:1px solid #3498db; background:#fff;"></div>' +
+      
+      '<div><label style="font-weight:bold; color:#2c3e50; margin-bottom:8px; display:block;">Adjustments / Festival (LKR)<br><small style="color:#7f8c8d; font-weight:normal;">Excel calculations allowed (e.g. <b>=1500+500</b>)</small></label>' +
+      '<input type="text" class="form-control" value="' + (counts.adjustment||0) + '" onblur="fbExcelInput(this, \''+hId+'\', \'adjustment\')" placeholder="=1500+500" style="width:100%; padding:12px; font-size:16px; border-radius:6px; border:1px solid #3498db; background:#fff;"></div>' +
+      
+      '</div>' + 
+      
+      '<div style="margin-top:25px; padding:20px; background:#e8f8f5; border-radius:8px; border: 1px solid #d1f2eb;">' +
+        '<h4 style="margin-top:0; color:#1abc9c; font-size:18px;">Live Budget Calculation</h4>' +
+        '<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">' +
+          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Food Budget</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.total_food.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Total Budget</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Net Payable</small><strong style="font-size:18px; color:#27ae60;">LKR ' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
+          '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Savings</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
         '</div>' +
       '</div>' +
     '</div>';
   } else {
-    html += '<div class="panel" style="text-align:center; padding:40px; color:#888;"><h3>Please select a House / Mother above to enter data.</h3></div>';
+    html += '<div class="panel" style="text-align:center; padding:60px 20px; color:#95a5a6; background:#fdfdfd; border:2px dashed #ecf0f1; border-radius:8px;">' +
+      '<div style="font-size:48px; margin-bottom:15px;">📊</div>' +
+      '<h3 style="margin:0; font-weight:normal;">Please select a House / Mother above to enter data.</h3></div>';
   }
   
-  html += '<div class="panel" style="overflow-x:auto;">' +
-    '<h3>Summary Overview</h3>' +
-    '<table class="data-table" style="min-width: 1000px; font-size: 13px;">' +
+  html += '<div class="panel" style="overflow-x:auto; margin-top:20px;">' +
+    '<h3 style="color:#2c3e50;">Summary Overview</h3>' +
+    '<table class="data-table" style="min-width: 1000px; font-size: 13px; text-align:left; border-collapse:collapse; width:100%;">' +
       '<thead>' +
-        '<tr style="background:#f8f9fa;">' +
-          '<th>House No</th>' +
-          '<th>Assigned Mother</th>' +
-          '<th style="text-align:center" colspan="2">Food</th>' +
-          '<th style="text-align:center" colspan="2">Clothing</th>' +
-          '<th style="text-align:center">HH</th>' +
-          '<th style="text-align:center">Mother</th>' +
-          '<th>Aunt Amt</th>' +
-          '<th>Adjustments</th>' +
-          '<th style="background:#e8f4f8">Total Budget</th>' +
-          '<th style="background:#e8f4f8">Net Payable</th>' +
+        '<tr style="background:#f4f6f7; border-bottom:2px solid #bdc3c7;">' +
+          '<th style="padding:12px;">House No</th>' +
+          '<th style="padding:12px;">Assigned Mother</th>' +
+          '<th style="padding:12px;">Child >12</th>' +
+          '<th style="padding:12px;">Child <12</th>' +
+          '<th style="padding:12px;">HH</th>' +
+          '<th style="padding:12px;">Mother</th>' +
+          '<th style="padding:12px;">Aunt Amt</th>' +
+          '<th style="padding:12px;">Adjustments</th>' +
+          '<th style="padding:12px; background:#e8f8f5;">Total Budget</th>' +
+          '<th style="padding:12px; background:#e8f8f5;">Net Payable</th>' +
         '</tr>' +
       '</thead>' +
       '<tbody>';
@@ -566,22 +584,20 @@ function fbRenderEntry(container) {
     var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables);
     var cMotherName = fbGetMotherName(pName, h.house_no);
-    var isSel = (hId === h.id) ? 'background:#eafaf1; font-weight:bold;' : '';
+    var isSel = (hId === h.id) ? 'background:#eafaf1; font-weight:bold;' : 'border-bottom:1px solid #ecf0f1;';
     
     html += 
-      '<tr style="'+isSel+' cursor:pointer;" onclick="fbEditHouseForm(\''+h.id+'\')">' +
-        '<td><strong>' + h.house_no + '</strong></td>' +
-        '<td>' + cMotherName + '</td>' +
-        '<td>' + (counts.food_o12 || 0) + '</td>' +
-        '<td>' + (counts.food_u12 || 0) + '</td>' +
-        '<td>' + (counts.clothing_o12 || 0) + '</td>' +
-        '<td>' + (counts.clothing_u12 || 0) + '</td>' +
-        '<td>' + (counts.household || 0) + '</td>' +
-        '<td>' + (counts.mother_count || 0) + '</td>' +
-        '<td>' + (counts.aunt_amount || 0) + '</td>' +
-        '<td>' + (counts.adjustment || 0) + '</td>' +
-        '<td style="background:#f4f9fb; font-weight:bold;">' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
-        '<td style="background:#f4f9fb; font-weight:bold; color:#1F5C3A">' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+      '<tr style="'+isSel+' cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\''+(hId===h.id?'#eafaf1':'#fff')+'\'" onclick="fbEditHouseForm(\''+h.id+'\')">' +
+        '<td style="padding:10px;"><strong>' + h.house_no + '</strong></td>' +
+        '<td style="padding:10px;">' + cMotherName + '</td>' +
+        '<td style="padding:10px;">' + (counts.food_o12 || 0) + '</td>' +
+        '<td style="padding:10px;">' + (counts.food_u12 || 0) + '</td>' +
+        '<td style="padding:10px;">' + (counts.household || 0) + '</td>' +
+        '<td style="padding:10px;">' + (counts.mother_count || 0) + '</td>' +
+        '<td style="padding:10px;">' + (counts.aunt_amount || 0) + '</td>' +
+        '<td style="padding:10px;">' + (counts.adjustment || 0) + '</td>' +
+        '<td style="padding:10px; background:#f4f9fb; font-weight:bold;">' + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
+        '<td style="padding:10px; background:#f4f9fb; font-weight:bold; color:#27ae60;">' + calcs.net_payable.toLocaleString(undefined, {minimumFractionDigits:2}) + '</td>' +
       '</tr>';
   });
   
@@ -591,15 +607,17 @@ function fbRenderEntry(container) {
 
 window.fbDownloadTemplate = function() {
   if (!window.XLSX) return alert('Excel library not loaded.');
-  var ws_data = [['House No', 'Mother', 'Food >12', 'Food <12', 'Clothing >12', 'Clothing <12', 'HH Count', 'Mother Count', 'Aunt Amt', 'Adjustments']];
+  var ws_data = [['House No', 'Mother', 'Child >12', 'Child <12', 'HH Count', 'Mother Count', 'Aunt Amt', 'Adjustments']];
   var pName = window.fbState.activeProject.name;
   
-  window.fbState.houses.forEach(function(h) {
+  var validHouses = window.fbState.houses.filter(function(h) { return fbGetMotherName(pName, h.house_no) !== 'Unassigned'; });
+  var sortedHouses = validHouses.sort(function(a,b) { return parseInt(a.house_no) - parseInt(b.house_no); });
+  
+  sortedHouses.forEach(function(h) {
     var counts = window.fbState.childCounts.find(function(c) { return c.house_id === h.id; }) || {};
     ws_data.push([
       h.house_no, fbGetMotherName(pName, h.house_no), 
       counts.food_o12 || 0, counts.food_u12 || 0,
-      counts.clothing_o12 || 0, counts.clothing_u12 || 0,
       counts.household || 0, counts.mother_count || 0,
       counts.aunt_amount || 0, counts.adjustment || 0
     ]);
