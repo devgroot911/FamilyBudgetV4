@@ -179,7 +179,7 @@ function calculateHouseBudget(houseCounts, rates, prevBalances) {
   var second_withdrawal = remaining_food * ((100 - getRate('first_pct')) / 100); 
   var first_withdrawal = actual_clothing_w + actual_household_w + first_food_portion;
   
-  var food_balance = prevBalances.food + remaining_food - first_food_portion - second_withdrawal;
+  var food_balance = prevBalances.food + savings + remaining_food - first_food_portion - second_withdrawal;
   var clothing_balance = prevBalances.clothing + total_clothing - actual_clothing_w;
   var household_balance = prevBalances.household + total_hh - actual_household_w;
   var interest_balance = prevBalances.interest + interest_earned - bank_charges;
