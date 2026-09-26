@@ -13,7 +13,8 @@ window.fbState = {
   monthlySummary: null,
   currentSubView: 'projects',
   loading: false,
-  editingHouseId: null
+  editingHouseId: null,
+  hasUnsavedChanges: false
 };
 
 // Rates matched exactly to SOS Children's Village Piliyandala Excel Sheet
@@ -113,6 +114,10 @@ function canAccessFb() {
 }
 
 window.fbChangePeriod = function() {
+  if (window.fbState.hasUnsavedChanges) {
+    if (!confirm("You have unsaved changes. Are you sure you want to change the period and discard them?")) return;
+  }
+  window.fbState.hasUnsavedChanges = false;
   window.fbState.activeMonth = parseInt(document.getElementById('fb-sel-month').value);
   window.fbState.activeYear = parseInt(document.getElementById('fb-sel-year').value);
   loadProjectData();
@@ -145,11 +150,12 @@ window.fbParseMath = function(val) {
 window.fbExcelInput = function(elem, houseId, field) {
   var num = window.fbParseMath(elem.value);
   elem.value = num;
-  window.fbUpdateCount(houseId, field, num);
+  window.fbUpdateLocalCount(houseId, field, num);
 };
 
 function loadFbData() {
   window.fbState.loading = true;
+  window.fbState.hasUnsavedChanges = false;
   fbRenderSubView();
   
   var role = getFbRole();
@@ -208,6 +214,7 @@ function loadProjectData() {
   var m = window.fbState.activeMonth;
   
   window.fbState.loading = true;
+  window.fbState.hasUnsavedChanges = false;
   fbRenderSubView();
   
   Promise.all([
@@ -301,6 +308,10 @@ window.renderFbCalculator = function() {
   
   container.querySelectorAll('.fb-nav-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
+      if (window.fbState.hasUnsavedChanges) {
+        if (!confirm("You have unsaved changes. Discard them?")) return;
+        window.fbState.hasUnsavedChanges = false;
+      }
       window.fbState.currentSubView = e.target.dataset.subview;
       fbRenderSubView();
     });
@@ -358,6 +369,10 @@ function fbRenderProjects(container) {
 }
 
 window.fbSelectProject = function(id) {
+  if (window.fbState.hasUnsavedChanges) {
+    if (!confirm("You have unsaved changes. Discard them?")) return;
+    window.fbState.hasUnsavedChanges = false;
+  }
   window.fbState.activeProject = window.fbState.myProjects.find(function(p) { return p.id === id; });
   window.fbState.editingHouseId = null; 
   window.fbState.currentSubView = 'entry';
@@ -445,6 +460,10 @@ window.fbSaveRates = function() {
 };
 
 window.fbEditHouseForm = function(hId) {
+  if (window.fbState.hasUnsavedChanges) {
+    if (!confirm("You have unsaved changes in this house form. Are you sure you want to discard them?")) return;
+    window.fbState.hasUnsavedChanges = false;
+  }
   window.fbState.editingHouseId = hId;
   fbRenderSubView();
 };
@@ -497,18 +516,21 @@ function fbRenderEntry(container) {
     var motherName = fbGetMotherName(pName, house.house_no);
     
     html += '<div class="panel" style="margin-bottom:20px; border-left:5px solid #3498db; background:#ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius:8px; padding:25px;">' +
-      '<h3 style="margin-top:0; color:#2c3e50; font-size:20px; font-weight:600;">Data Entry For: <span style="color:#3498db">House ' + house.house_no + ' (' + motherName + ')</span></h3>' +
+      '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+        '<h3 style="margin:0; color:#2c3e50; font-size:20px; font-weight:600;">Data Entry For: <span style="color:#3498db">House ' + house.house_no + ' (' + motherName + ')</span></h3>' +
+        (window.fbState.hasUnsavedChanges ? '<span style="color:#e74c3c; font-weight:bold; font-size:14px; background:#fadbd8; padding:5px 10px; border-radius:4px;">⚠️ Unsaved Changes - Click Save</span>' : '') +
+      '</div>' +
       '<hr style="border:0; border-top:1px solid #ecf0f1; margin:20px 0;">' +
       
       '<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom:25px;">' +
       '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Children Over 12</label>' +
-      '<input type="number" min="0" class="form-control" value="' + (counts.food_o12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_o12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.food_o12||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'food_o12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       
       '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Children Under 12</label>' +
-      '<input type="number" min="0" class="form-control" value="' + (counts.food_u12||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'food_u12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.food_u12||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'food_u12\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       
       '<div><label style="font-weight:600; color:#7f8c8d; display:block; margin-bottom:8px;">Mothers in House</label>' +
-      '<input type="number" min="0" class="form-control" value="' + (counts.mother_count||0) + '" onchange="fbUpdateCount(\''+hId+'\', \'mother_count\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
+      '<input type="number" min="0" class="form-control" value="' + (counts.mother_count||0) + '" onchange="fbUpdateLocalCount(\''+hId+'\', \'mother_count\', this.value)" style="width:100%; padding:10px; font-size:16px; border-radius:6px; border:1px solid #bdc3c7;"></div>' +
       '</div>' + 
       
       '<div class="grid two-col" style="gap:20px; margin-bottom:25px;">' +
@@ -540,7 +562,7 @@ function fbRenderEntry(container) {
       '</div>' + 
       
       '<div style="margin-top:25px; padding:20px; background:#e8f8f5; border-radius:8px; border: 1px solid #d1f2eb;">' +
-        '<h4 style="margin-top:0; color:#1abc9c; font-size:18px;">Monthly Balances & Withdrawals</h4>' +
+        '<h4 style="margin-top:0; color:#1abc9c; font-size:18px;">Monthly Balances & Withdrawals (Live Preview)</h4>' +
         '<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">' +
           '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Food Balance</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.food_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong><br><small style="color:#999">(1st W: ' + calcs.first_withdrawal.toLocaleString() + ' | 2nd W: ' + calcs.second_withdrawal.toLocaleString() + ')</small></div>' +
           '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Clothing Balance</small><strong style="font-size:18px; color:#2c3e50;">LKR ' + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong><br><small style="color:#999">(Budget: ' + calcs.total_clothing.toLocaleString() + ')</small></div>' +
@@ -548,6 +570,11 @@ function fbRenderEntry(container) {
           '<div style="background:#fff; padding:15px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.02);"><small style="color:#7f8c8d; font-weight:bold; display:block; margin-bottom:5px;">Interest Balance</small><strong style="font-size:18px; color:#27ae60;">LKR ' + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + '</strong></div>' +
         '</div>' +
       '</div>' +
+      
+      '<div style="margin-top:25px; text-align:right; border-top:1px solid #ecf0f1; padding-top:20px;">' +
+        '<button class="primary-button" onclick="fbReviewAndSave(\''+hId+'\')" style="font-size:16px; padding:12px 30px; background:#27ae60; border:none; border-radius:6px; cursor:pointer;">&#10004; Review & Save House Data</button>' +
+      '</div>' +
+
     '</div>';
   } else {
     html += '<div class="panel" style="text-align:center; padding:60px 20px; color:#95a5a6; background:#fdfdfd; border:2px dashed #ecf0f1; border-radius:8px;">' +
@@ -621,41 +648,59 @@ window.fbDownloadTemplate = function() {
   XLSX.writeFile(wb, window.fbState.activeProject.name + "_Summary_" + window.fbState.activeYear + "_" + window.fbState.activeMonth + ".xlsx");
 };
 
-window.fbUpdateCount = function(houseId, field, val) {
+window.fbUpdateLocalCount = function(houseId, field, val) {
   var pid = window.fbState.activeProject.id;
   var y = window.fbState.activeYear;
   var m = window.fbState.activeMonth;
   
   var existing = window.fbState.childCounts.find(function(c) { return c.house_id === houseId; });
-  if (!existing) existing = {};
+  if (!existing) {
+    existing = { project_id: pid, year: y, month: m, house_id: houseId };
+    window.fbState.childCounts.push(existing);
+  }
   
-  existing.project_id = pid;
-  existing.year = y;
-  existing.month = m;
-  existing.house_id = houseId;
   existing[field] = Number(val);
+  window.fbState.hasUnsavedChanges = true;
+  fbRenderSubView();
+};
+
+window.fbReviewAndSave = function(houseId) {
+  var existing = window.fbState.childCounts.find(function(c) { return c.house_id === houseId; });
+  if (!existing) return alert("No data to save.");
   
-  // Explicitly snapshot and save the derived balances in the database via the remarks column
-  // This satisfies the request to save calculated ledger balances natively to the database
   var calcs = calculateHouseBudget(existing, window.fbState.rateVariables);
-  existing.remarks = JSON.stringify({
-    savings: calcs.savings,
-    first_w: calcs.first_withdrawal,
-    second_w: calcs.second_withdrawal,
-    clothing_bal: calcs.clothing_balance,
-    household_bal: calcs.household_balance,
-    interest_bal: calcs.interest_balance
-  });
   
-  supabase.from('fb_child_counts').upsert([existing], { onConflict: 'project_id, year, month, house_id' }).then(function(res) {
-    if (res.error) throw res.error;
-    var idx = window.fbState.childCounts.findIndex(function(c) { return c.house_id === houseId; });
-    if(idx > -1) window.fbState.childCounts[idx] = existing;
-    else window.fbState.childCounts.push(existing);
-    fbRenderSubView();
-  }).catch(function(e) {
-    alert('Error saving data: ' + e.message);
-  });
+  var summary = "=== DOUBLE VERIFICATION SUMMARY ===\n\n";
+  summary += "Total Budget: LKR " + calcs.total_budget.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n";
+  summary += "Savings (5%): LKR " + calcs.savings.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n";
+  summary += "1st Withdrawal: LKR " + calcs.first_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n";
+  summary += "2nd Withdrawal: LKR " + calcs.second_withdrawal.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n\n";
+  summary += "--- MONTHLY CLOSING BALANCES ---\n";
+  summary += "Clothing Balance: LKR " + calcs.clothing_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n";
+  summary += "Household Balance: LKR " + calcs.household_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n";
+  summary += "Interest Balance: LKR " + calcs.interest_balance.toLocaleString(undefined, {minimumFractionDigits:2}) + "\n\n";
+  summary += "Do you want to permanently commit these records to the database?";
+  
+  if (confirm(summary)) {
+    // Explicitly snapshot and save the derived balances in the database via the remarks column
+    existing.remarks = JSON.stringify({
+      savings: calcs.savings,
+      first_w: calcs.first_withdrawal,
+      second_w: calcs.second_withdrawal,
+      clothing_bal: calcs.clothing_balance,
+      household_bal: calcs.household_balance,
+      interest_bal: calcs.interest_balance
+    });
+    
+    supabase.from('fb_child_counts').upsert([existing], { onConflict: 'project_id, year, month, house_id' }).then(function(res) {
+      if (res.error) throw res.error;
+      alert('Data explicitly saved to database successfully!');
+      window.fbState.hasUnsavedChanges = false;
+      fbRenderSubView();
+    }).catch(function(e) {
+      alert('Error saving data: ' + e.message);
+    });
+  }
 };
 
 function fbRenderHistory(container) {
