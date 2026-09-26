@@ -1919,8 +1919,8 @@ function generateExcelReport(username, month) {
     
     var cat1Allowances = {};
     var prof = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
-    var userHouse = prof.house || 'ALL';
-    var userVillage = prof.village || 'ALL';
+    var userHouse = prof.house ? prof.house : 'NONE';
+    var userVillage = prof.village ? prof.village : 'NONE';
     categories.forEach(function(c) {
       var allowAmt = allowance(c.id, month, userHouse, userVillage) || 0;
       cat1Allowances[c.name] = allowAmt;
@@ -1965,8 +1965,8 @@ function generateExcelReport(username, month) {
         var matchedCat = categories.find(function(c) { return c.name === k; });
         if (matchedCat) {
             var prof2 = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
-            var uh = prof2.house || 'ALL';
-            var uv = prof2.village || 'ALL';
+            var uh = prof2.house ? prof2.house : 'NONE';
+            var uv = prof2.village ? prof2.village : 'NONE';
             fbWithdrawn = getFbWithdrawn(matchedCat.id, month, uh, uv);
         }
         var bal = fbWithdrawn - ex;
@@ -2104,8 +2104,8 @@ function generateExcelReport(username, month) {
          var matchedCat = categories.find(function(c) { return c.name === k; });
          if (matchedCat) {
             var prof2 = (state.profiles && state.profiles[username]) ? state.profiles[username] : {};
-            var uh = prof2.house || 'ALL';
-            var uv = prof2.village || 'ALL';
+            var uh = prof2.house ? prof2.house : 'NONE';
+            var uv = prof2.village ? prof2.village : 'NONE';
             fbWithdrawn = getFbWithdrawn(matchedCat.id, month, uh, uv);
          }
          var bal = fbWithdrawn - ex;
