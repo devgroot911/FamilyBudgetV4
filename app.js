@@ -478,7 +478,7 @@ function render() {
   if (role.indexOf('admin') !== -1) {
     document.querySelectorAll('.nav-item').forEach(function(btn) { btn.style.display = 'flex'; });
   } else if (isManager) {
-    var views = ['dashboard', 'reports', 'records', 'expenses', 'items', 'profile', 'fb-calculator'];
+    var views = ['dashboard', 'reports', 'records', 'expenses', 'allowances', 'items', 'profile', 'fb-calculator'];
     views.forEach(function(v) {
       var el = document.querySelector('[data-view="' + v + '"]');
       if (el) el.style.display = 'flex';
