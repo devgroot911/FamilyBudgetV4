@@ -729,7 +729,7 @@ function fbRenderEntry(container) {
 
 window.fbDownloadTemplate = function() {
   if (!window.XLSX) return fbAlert('Excel library missing.');
-  var ws_data = [['House No', 'Mother Snapshot', 'Child >12', 'Child <12', 'Aunt Amt', 'Actual Clothing W', 'Actual HH W', 'Interest Earned', 'Bank Charges', 'Start Food Bal', 'Start Cloth Bal', 'Start HH Bal', 'Start Int Bal']];
+  var ws_data = [['House No', 'Mother Snapshot', 'Child >12', 'Child <12', 'Aunt Amt', 'Special Allowances / Adjustments', 'Actual Clothing W', 'Actual HH W', 'Interest Earned', 'Bank Charges', 'Start Food Bal', 'Start Cloth Bal', 'Start HH Bal', 'Start Int Bal']];
   var vName = window.fbState.activeVillage;
   var activeHouses = getVillageHouses(vName);
   
@@ -737,7 +737,7 @@ window.fbDownloadTemplate = function() {
     var prev = getPreviousBalances(h.house_no, window.fbState.activeYear, window.fbState.activeMonth);
     var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(h.house_no); }) || {};
     var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
-    ws_data.push([ h.house_no, (counts.mother_name || h.mother_name), counts.food_o12||0, counts.food_u12||0, counts.aunt_amount||0, calcs.actual_clothing_w, calcs.actual_household_w, calcs.interest_earned, calcs.bank_charges, prev.food, prev.clothing, prev.household, prev.interest ]);
+    ws_data.push([ h.house_no, (counts.mother_name || h.mother_name), counts.food_o12||0, counts.food_u12||0, counts.aunt_amount||0, counts.adjustment||0, calcs.actual_clothing_w, calcs.actual_household_w, calcs.interest_earned, calcs.bank_charges, prev.food, prev.clothing, prev.household, prev.interest ]);
   });
   
   var wb = XLSX.utils.book_new();
@@ -897,7 +897,7 @@ window.fbShowReviewModal = function(houseNo, transfers) {
               
               '<div style="grid-column: span 2;"><hr style="border-top:1px dashed #ccc; margin:2px 0;"></div>' +
               
-              '<div><span class="fb-label">Adjustments</span>LKR ' + Number(existing.adjustment||0).toLocaleString() + '</div>' +
+              '<div><span class="fb-label" style="font-size:10px;">Special Allowances / Adjustments</span>LKR ' + Number(existing.adjustment||0).toLocaleString() + '</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -1064,7 +1064,7 @@ window.fbDownloadBulkTemplate = function() {
   var houses = getVillageHouses(vName);
   
   // Sheet 1: Current Entries
-  var ws1_data = [['House No', 'Project Name', 'Children (Over 12)', 'Children (Under 12)', 'Mother Count', 'Aunt Amount', 'Adjustment', 'Festival', 'Clothing Withdrawal', 'Household Withdrawal', 'Interest Earned', 'Arrears / Bank Charges']];
+  var ws1_data = [['House No', 'Project Name', 'Children (Over 12)', 'Children (Under 12)', 'Mother Count', 'Aunt Amount', 'Special Allowances / Adjustments', 'Festival', 'Clothing Withdrawal', 'Household Withdrawal', 'Interest Earned', 'Arrears / Bank Charges']];
   
   // Sheet 2: Opening Balances (Optional Fallback)
   var ws2_data = [['House No', 'Food Balance', 'Clothing Balance', 'Household Balance', 'Interest Balance']];
@@ -1156,7 +1156,7 @@ function fbValidateAndCalculateBulk(workbook) {
       food_u12: getNum(row['Children (Under 12)'], 'Children (Under 12)'),
       mother_count: getNum(row['Mother Count'], 'Mother Count'),
       aunt_amount: getNum(row['Aunt Amount'], 'Aunt Amount'),
-      adjustment: getNum(row['Adjustment'], 'Adjustment'),
+      adjustment: getNum(row['Special Allowances / Adjustments'] !== undefined ? row['Special Allowances / Adjustments'] : row['Adjustment'], 'Special Allowances / Adjustments'),
       festival: getNum(row['Festival'], 'Festival'),
       clothing_o12: getNum(row['Clothing Withdrawal'], 'Clothing Withdrawal'), // mapped correctly
       clothing_u12: getNum(row['Household Withdrawal'], 'Household Withdrawal'), // mapped correctly
