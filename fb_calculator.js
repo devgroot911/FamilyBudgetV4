@@ -187,7 +187,7 @@ function calculateHouseBudget(houseCounts, rates, prevBalances) {
   var remaining_food = total_food - savings; // for balance calculation if needed
   var first_food_portion = (remaining_base_food * (getRate('first_pct') / 100)) + aunt_amount;
   var second_withdrawal = remaining_base_food * ((100 - getRate('first_pct')) / 100); 
-  var first_withdrawal = actual_clothing_w + actual_household_w + first_food_portion;
+  var first_withdrawal = actual_clothing_w + actual_household_w + first_food_portion + adjustment;
   
   var food_balance = prevBalances.food + savings + remaining_food - first_food_portion - second_withdrawal + manualAdjustments.food;
   var clothing_balance = prevBalances.clothing + total_clothing - actual_clothing_w + manualAdjustments.clothing;
@@ -668,7 +668,7 @@ function fbRenderEntry(container) {
             '<div><label class="fb-label">Child <12</label><input type="text" class="form-control fb-compact-input" value="'+(counts.food_u12||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'food_u12\')"></div>' +
             '<div><label class="fb-label">Mothers</label><input type="text" class="form-control fb-compact-input" value="'+(counts.mother_count||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'mother_count\')"></div>' +
             '<div><label class="fb-label">Aunt Amt</label><input type="text" class="form-control fb-compact-input" value="'+(counts.aunt_amount||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'aunt_amount\')"></div>' +
-            '<div><label class="fb-label">Adjustments</label><input type="text" class="form-control fb-compact-input" value="'+(counts.adjustment||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'adjustment\')"></div>' +
+            '<div><label class="fb-label" style="font-size:9px;">Special Allowances / Adjustments</label><input type="text" class="form-control fb-compact-input" value="'+(counts.adjustment||0)+'" onblur="fbExcelInput(this, \''+hNo+'\', \'adjustment\')"></div>' +
             '<div><label class="fb-label">Interest</label><input type="text" class="form-control fb-compact-input" value="'+calcs.interest_earned+'" onblur="fbExcelInput(this, \''+hNo+'\', \'household\')"></div>' +
           '</div>' +
         '</div>' +
