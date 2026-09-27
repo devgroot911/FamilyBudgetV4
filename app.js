@@ -1039,7 +1039,20 @@ function renderAllowances() {
   if (!isMother) {
       var allRows = window.appState && window.appState.fbAllocations ? window.appState.fbAllocations : [];
       
-      if (isGlobal) {
+          // Populate village dropdown for all roles (global and non‑global)
+    var availableVillages = [];
+    allRows.forEach(function(r) {
+        if (r.village && availableVillages.indexOf(r.village) === -1) {
+            availableVillages.push(r.village);
+        }
+    });
+    availableVillages.sort();
+    villageSelectorHtml = '<div class="field"><label for="allowance-village">Select Project (Village)</label><select id="allowance-village">' +
+        '<option value="ALL"' + (window.selectedAllowanceVillage === 'ALL' ? ' selected' : '') + '>All Villages (National Aggregate)</option>' +
+        availableVillages.map(function(v) {
+            return '<option value="' + v + '"' + (window.selectedAllowanceVillage == v ? ' selected' : '') + '>' + v + '</option>';
+        }).join('') +
+        '</select></div>';
           var availableVillages = [];
           allRows.forEach(function(r) {
              if (r.village && availableVillages.indexOf(r.village) === -1) availableVillages.push(r.village);

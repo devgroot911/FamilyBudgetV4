@@ -176,15 +176,17 @@ function calculateHouseBudget(houseCounts, rates, prevBalances) {
   var adjustment = Number(houseCounts.adjustment || 0);
   var festival = Number(houseCounts.festival || 0);
   
-  var total_food = food_o12_amount + food_u12_amount + mother_amount + aunt_amount;
+  var base_food = food_o12_amount + food_u12_amount + mother_amount;
+  var total_food = base_food + aunt_amount;
   var total_clothing = clothing_o12_amount + clothing_u12_amount;
   var total_hh = household_amount;
   var total_budget = total_food + total_clothing + total_hh + adjustment + festival;
   
-  var savings = total_food * (getRate('savings_pct') / 100);
-  var remaining_food = total_food - savings; 
-  var first_food_portion = remaining_food * (getRate('first_pct') / 100);
-  var second_withdrawal = remaining_food * ((100 - getRate('first_pct')) / 100); 
+  var savings = base_food * (getRate('savings_pct') / 100);
+  var remaining_base_food = base_food - savings; 
+  var remaining_food = total_food - savings; // for balance calculation if needed
+  var first_food_portion = (remaining_base_food * (getRate('first_pct') / 100)) + aunt_amount;
+  var second_withdrawal = remaining_base_food * ((100 - getRate('first_pct')) / 100); 
   var first_withdrawal = actual_clothing_w + actual_household_w + first_food_portion;
   
   var food_balance = prevBalances.food + savings + remaining_food - first_food_portion - second_withdrawal + manualAdjustments.food;
