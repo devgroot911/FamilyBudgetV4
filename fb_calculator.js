@@ -206,10 +206,11 @@ function calculateHouseBudget(houseCounts, rates, prevBalances) {
 function getFbRole() {
   var role = (sessionStorage.getItem('role') || '').toLowerCase();
   if (role.indexOf('admin') !== -1) return 'admin';
-  if (role.indexOf('director') !== -1) return 'director';
-  if (role.indexOf('national') !== -1) return 'national';
+  if (role === 'national_director' || role.indexOf('national') !== -1 || (role.indexOf('director') !== -1 && role.indexOf('village') === -1)) return 'national';
+  if (role === 'village_director' || role.indexOf('village') !== -1 || role.indexOf('manager') !== -1) return 'village';
   if (role.indexOf('accountant') !== -1) return 'accountant';
   if (role.indexOf('assistant') !== -1) return 'assistant';
+  if (role.indexOf('mother') !== -1) return 'mother';
   return 'viewer';
 }
 function canAccessFb() { return getFbRole() !== 'viewer'; }
@@ -309,7 +310,7 @@ function loadFbData() {
       if (v && v.toLowerCase() !== 'all' && uniqueVillages.indexOf(v) === -1) uniqueVillages.push(v);
     });
   }
-  if (myVillage.toLowerCase() === 'all' || ['admin','director','national'].indexOf(getFbRole()) !== -1) {
+  if (myVillage.toLowerCase() === 'all' || ['admin','national','accountant','assistant'].indexOf(getFbRole()) !== -1) {
     window.fbState.myVillages = uniqueVillages;
   } else {
     window.fbState.myVillages = uniqueVillages.filter(function(v) { return v.toLowerCase() === myVillage.toLowerCase(); });
@@ -466,10 +467,17 @@ function fbRenderSubView() {
   if (ratesBtn) ratesBtn.style.display = 'block';
   
   var hasProj = !!window.fbState.activeVillage;
-  ['dashboard', 'entry', 'bulk'].forEach(function(id) {
-    var el = document.getElementById('fb-nav-' + id);
-    if(el) el.style.display = hasProj ? 'block' : 'none';
-  });
+  var fbRole = getFbRole();
+  var isMother = (fbRole === 'mother' || fbRole === 'viewer');
+  
+  var dashEl = document.getElementById('fb-nav-dashboard');
+  if (dashEl) dashEl.style.display = hasProj ? 'block' : 'none';
+  
+  var entryEl = document.getElementById('fb-nav-entry');
+  if (entryEl) entryEl.style.display = (hasProj && !isMother) ? 'block' : 'none';
+  
+  var bulkEl = document.getElementById('fb-nav-bulk');
+  if (bulkEl) bulkEl.style.display = (hasProj && !isMother) ? 'block' : 'none';
   
   var xHouseBtn = document.getElementById('fb-nav-cross-house');
   if (xHouseBtn) {
@@ -513,7 +521,8 @@ window.fbSelectVillage = function(vName) {
       window.fbState.hasUnsavedChanges = false;
       window.fbState.activeVillage = vName;
       window.fbState.editingHouseNo = null; 
-      window.fbState.currentSubView = 'entry';
+      var fbRole = getFbRole();
+      window.fbState.currentSubView = (fbRole === 'mother' || fbRole === 'viewer') ? 'dashboard' : 'entry';
       loadVillageData();
   };
   if (window.fbState.hasUnsavedChanges) fbConfirm("Discard unsaved changes?", proceed);
