@@ -1595,7 +1595,11 @@ function renderProfile() {
           .then(function(res) {
             if (res.error) throw res.error;
             if (payload.house && payload.village && (payload.role === 'mother' || payload.usertype.toLowerCase().indexOf('mother') !== -1)) {
-                return supabase.from('fb_houses').upsert({ house_no: payload.house, village: payload.village, assigned_mother_username: editing }, { onConflict: 'village, house_no' });
+                // Policy: A mother can only be in one house at a time. Free her from any previous house first.
+                return supabase.from('fb_houses').update({ assigned_mother_username: null }).eq('assigned_mother_username', editing)
+                  .then(function() {
+                      return supabase.from('fb_houses').upsert({ house_no: payload.house, village: payload.village, assigned_mother_username: editing }, { onConflict: 'village, house_no' });
+                  });
             }
             return Promise.resolve();
           })
