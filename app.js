@@ -835,6 +835,7 @@ function renderExpenses() {
           var p = state.profiles[u];
           var isMother = (p.role && p.role.toLowerCase() === 'mother') || (!p.role && p.usertype && p.usertype.toLowerCase().indexOf('mother') !== -1);
           if (!isMother) return false;
+          if (!p.house || String(p.house).trim() === '' || String(p.house).trim().toLowerCase() === 'none') return false; // Enforce house check
           if (!isNational && p.village !== myVillage) return false;
           if (isNational && window.expenseVillageFilter !== 'All' && p.village !== window.expenseVillageFilter) return false;
           return true;
@@ -848,8 +849,19 @@ function renderExpenses() {
             availableVillagesExp.map(function(v) { return '<option value="' + escapeHtml(v) + '"' + (window.expenseVillageFilter === v ? ' selected' : '') + '>' + escapeHtml(v) + '</option>'; }).join('') + 
             '</select></div>';
         }
-        userSelectHtml += '<div class="field" style="margin-bottom:15px"><label for="expense-user">Assign to Mother</label><select id="expense-user">' + options + '</select></div>';
-      }
+        
+        if (options === '') {
+            userSelectHtml += '<div class="field" style="margin-bottom:15px; color:#c0392b; font-weight:bold;">No eligible mothers (assigned to a house) found in this village.</div>';
+        } else {
+            userSelectHtml += '<div class="field" style="margin-bottom:15px"><label for="expense-user">Assign to Mother</label><select id="expense-user">' + options + '</select></div>';
+        }
+    } else {
+        var myProfile = state.profiles ? state.profiles[myName] : null;
+        if (myProfile && (!myProfile.house || String(myProfile.house).trim() === '' || String(myProfile.house).trim().toLowerCase() === 'none')) {
+            document.querySelector('#view-expenses').innerHTML = '<div class="panel" style="padding:40px; text-align:center; border:2px solid #e74c3c; background:#fdf2f0; margin:20px;"><h2 style="color:#c0392b; margin-top:0;">House Not Assigned</h2><p>You cannot enter expenses because you are not assigned to a house. Please contact your Village Director or Administrator to update your profile.</p></div>';
+            return;
+        }
+    }
 
     document.querySelector('#view-expenses').innerHTML =
       '<div class="grid two-col">' +
@@ -1715,10 +1727,17 @@ document.addEventListener('submit', function(event) {
   var quantity = Number(document.querySelector('#expense-quantity').value);
   var total = Number(document.querySelector('#expense-total').value);
   if (quantity <= 0 || total <= 0) return notify('Enter a valid quantity and total price');
+  var role = (sessionStorage.getItem('role') || 'mother').toLowerCase();
+  var isManager = role.indexOf('admin') !== -1 || role.indexOf('director') !== -1 || role.indexOf('accountant') !== -1 || role.indexOf('assistant') !== -1;
   var userField = document.querySelector('#expense-user');
-    var expenseId = document.querySelector('#expense-id') ? document.querySelector('#expense-id').value : '';
-    var expense = {
-      user: userField ? userField.value : (sessionStorage.getItem('username') || 'mother'),
+  
+  if (isManager && !userField) {
+      return notify('Cannot add expense: No eligible mothers assigned to houses.');
+  }
+
+  var expenseId = document.querySelector('#expense-id') ? document.querySelector('#expense-id').value : '';
+  var expense = {
+    user: userField ? userField.value : (sessionStorage.getItem('username') || 'mother'),
       date: document.querySelector('#expense-date').value || today(),
       name: document.querySelector('#expense-name').value.trim(),
       category: Number(document.querySelector('#expense-category').value),
