@@ -1375,8 +1375,15 @@ function renderProfile() {
               '<div class="field"><label>Name / Identifier</label><input id="new-user-name" required placeholder="e.g. Jane (Mother)"></div>' +
               '<div class="field"><label>Role (Permissions)</label><select id="new-user-role"><option value="mother">Mother (Data Entry)</option><option value="village_director">Village Director</option><option value="accounts_assistant">Accounts Assistant</option><option value="accountant">Accountant</option><option value="national_director">National Director</option><option value="admin">System Admin</option></select></div>' +
               '<div class="field"><label>User Type (Display)</label><select id="new-user-usertype"><option value="Mother / YCCW">Mother / YCCW</option><option value="Father / Guardian">Father / Guardian</option><option value="Village Director">Village Director</option><option value="Accounts Assistant">Accounts Assistant</option><option value="System Admin">System Admin</option><option value="Other">Other</option></select></div>' +
-              '<div class="field"><label>Village</label><input id="new-user-village" required placeholder="e.g. Piliyandala"></div>' +
-              '<div class="field"><label>House No. / Name</label><input id="new-user-house" required placeholder="House number"></div>' +
+              '<div class="field"><label>Village</label><input id="new-user-village" required placeholder="e.g. Piliyandala" onblur="window.refreshHouseDropdown(this.value)"></div>' +
+              '<div class="field"><label>House (For Mothers)</label>' +
+                '<div style="display:flex; gap:10px;">' +
+                  '<select id="new-user-house-select" style="flex:1;" onchange="window.toggleNewHouseInput()">' +
+                    '<option value="">-- None / Select Village --</option>' +
+                  '</select>' +
+                  '<input id="new-user-house-input" placeholder="New House No." style="flex:1; display:none;">' +
+                '</div>' +
+              '</div>' +
               '<div class="field"><label>Phone Number</label><input id="new-user-phone" required placeholder="07XXXXXXXX"></div>' +
               '<div class="field"><label>Email Address</label><input id="new-user-email" type="email" placeholder="(Optional)"></div>' +
             '</div>' +
@@ -1412,6 +1419,67 @@ function renderProfile() {
     }
     loadUsers();
   
+    window.refreshHouseDropdown = function(villageName, selectedHouse) {
+      var select = document.querySelector('#new-user-house-select');
+      var input = document.querySelector('#new-user-house-input');
+      if (!select || !input) return;
+      
+      var v = (villageName || '').trim().toLowerCase();
+      if (!v) {
+         select.innerHTML = '<option value="">-- Type Village First --</option>';
+         input.style.display = 'none';
+         return;
+      }
+      
+      // Fetch houses for this village from Supabase
+      supabase.from('fb_houses').select('*').ilike('village', v).then(function(res) {
+          var options = '<option value="">-- None --</option>';
+          var houses = res.data || [];
+          houses.sort(function(a,b) { return parseInt(a.house_no.replace(/\\D/g,'')) - parseInt(b.house_no.replace(/\\D/g,'')); });
+          
+          houses.forEach(function(h) {
+              var mName = h.assigned_mother_username ? ' (Assigned to ' + h.assigned_mother_username + ')' : ' (Unassigned)';
+              options += '<option value="' + escapeHtml(h.house_no) + '">' + escapeHtml(h.house_no) + mName + '</option>';
+          });
+          options += '<option value="__NEW__">+ Create New House</option>';
+          
+          select.innerHTML = options;
+          if (selectedHouse) {
+             var exists = houses.find(function(h) { return String(h.house_no) === String(selectedHouse); });
+             if (exists) {
+                 select.value = selectedHouse;
+                 input.style.display = 'none';
+             } else {
+                 select.value = '__NEW__';
+                 input.value = selectedHouse;
+                 input.style.display = 'block';
+             }
+          } else {
+             select.value = '';
+             input.value = '';
+             input.style.display = 'none';
+          }
+      });
+    };
+    
+    window.toggleNewHouseInput = function() {
+       var select = document.querySelector('#new-user-house-select');
+       var input = document.querySelector('#new-user-house-input');
+       if (select.value === '__NEW__') {
+           input.style.display = 'block';
+       } else {
+           input.style.display = 'none';
+           input.value = '';
+       }
+    };
+    
+    function getHouseValue() {
+       var select = document.querySelector('#new-user-house-select');
+       var input = document.querySelector('#new-user-house-input');
+       if (select.value === '__NEW__') return input.value.trim();
+       return select.value || '';
+    }
+  
     window.editUser = function(username) {
       var user = (window.loadedUsers || []).find(function(u) { return u.username === username; });
       if (!user) return;
@@ -1430,7 +1498,10 @@ function renderProfile() {
       
       document.querySelector('#new-user-usertype').value = user.usertype || defaultUsertype;
       document.querySelector('#new-user-village').value = user.village || '';
-      document.querySelector('#new-user-house').value = user.house || '';
+      
+      // Load the house dropdown and pre-select the user's house
+      window.refreshHouseDropdown(user.village, user.house);
+      
       document.querySelector('#new-user-phone').value = user.phone || '';
       document.querySelector('#new-user-email').value = user.email || '';
       
@@ -1455,6 +1526,7 @@ function renderProfile() {
       document.querySelector('#new-user-username').value = '';
       document.querySelector('#new-user-username').readOnly = false;
       document.querySelector('#add-user-form').reset();
+      window.refreshHouseDropdown('', '');
       document.querySelector('#user-form-title').textContent = 'Create User';
       document.querySelector('#add-user-submit').textContent = 'Create User';
       document.querySelector('#cancel-edit').style.display = 'none';
@@ -1488,7 +1560,7 @@ function renderProfile() {
         role: document.querySelector('#new-user-role').value,
         usertype: document.querySelector('#new-user-usertype').value,
         village: document.querySelector('#new-user-village').value.trim(),
-        house: document.querySelector('#new-user-house').value.trim(),
+        house: getHouseValue(),
         phone: document.querySelector('#new-user-phone').value.trim(),
         email: document.querySelector('#new-user-email').value.trim()
       };
@@ -1499,6 +1571,7 @@ function renderProfile() {
           document.querySelector('#cancel-edit').click();
         } else {
           document.querySelector('#add-user-form').reset();
+          window.refreshHouseDropdown('', '');
           btn.textContent = 'Create User';
         }
         loadUsers();
