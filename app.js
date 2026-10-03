@@ -1510,7 +1510,7 @@ function renderProfile() {
           .then(function(res) {
             if (res.error) throw res.error;
             if (payload.house && payload.village && (payload.role === 'mother' || payload.usertype.toLowerCase().indexOf('mother') !== -1)) {
-                return supabase.from('fb_houses').upsert({ house_no: payload.house, village: payload.village, assigned_mother_username: editing }, { onConflict: 'house_no' });
+                return supabase.from('fb_houses').upsert({ house_no: payload.house, village: payload.village, assigned_mother_username: editing }, { onConflict: 'village, house_no' });
             }
             return Promise.resolve();
           })
@@ -1525,7 +1525,7 @@ function renderProfile() {
           .then(function(res) {
             if (res.error) throw res.error;
             if (payload.house && payload.village && (payload.role === 'mother' || payload.usertype.toLowerCase().indexOf('mother') !== -1)) {
-                return supabase.from('fb_houses').upsert({ house_no: payload.house, village: payload.village, assigned_mother_username: payload.username }, { onConflict: 'house_no' });
+                return supabase.from('fb_houses').upsert({ house_no: payload.house, village: payload.village, assigned_mother_username: payload.username }, { onConflict: 'village, house_no' });
             }
             return Promise.resolve();
           })
