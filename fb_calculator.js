@@ -218,18 +218,27 @@ function getFbRole() {
 function canAccessFb() { return getFbRole() !== 'viewer'; }
 
 function getVillageHouses(vName) {
-  if (!vName || !window.state || !window.state.profiles) return [];
+  if (!vName) return [];
+  var fbRole = getFbRole();
+  var myUsername = sessionStorage.getItem('username');
   var houses = [];
-  Object.keys(window.state.profiles).forEach(function(uname) {
-    var p = window.state.profiles[uname];
-    var isMother = (p.role && p.role.toLowerCase() === 'mother') || (p.usertype && p.usertype.toLowerCase().indexOf('mother') !== -1);
-    if (isMother && p.village && p.village.toLowerCase() === vName.toLowerCase() && p.house) {
-      if (!houses.find(function(h) { return String(h.house_no) === String(p.house); })) {
-        houses.push({ house_no: String(p.house), mother_name: p.name });
-      }
-    }
+  if (window.fbState && window.fbState.houses) {
+      window.fbState.houses.forEach(function(h) {
+          if (h.village.toLowerCase() === vName.toLowerCase()) {
+             if (fbRole === 'mother' && h.assigned_mother_username !== myUsername) return;
+             var mName = "Unassigned";
+             if (h.assigned_mother_username && window.state && window.state.profiles && window.state.profiles[h.assigned_mother_username]) {
+                 mName = window.state.profiles[h.assigned_mother_username].name || h.assigned_mother_username;
+             }
+             houses.push({ house_no: String(h.house_no), mother_name: mName, assigned_username: h.assigned_mother_username });
+          }
+      });
+  }
+  return houses.sort(function(a,b) { 
+      var an = parseInt(a.house_no.replace(/\D/g, '')) || 0;
+      var bn = parseInt(b.house_no.replace(/\D/g, '')) || 0;
+      return an - bn; 
   });
-  return houses.sort(function(a,b) { return parseInt(a.house_no) - parseInt(b.house_no); });
 }
 
 window.fbParseMath = function(val) {
@@ -343,8 +352,20 @@ function loadVillageData() {
   window.fbState.hasUnsavedChanges = false;
   fbRenderSubView();
   
-  supabase.from('fb_child_counts').select('*').eq('village', window.fbState.activeVillage).then(function(res) {
-    var data = res.data || [];
+  Promise.all([
+    supabase.from('fb_child_counts').select('*').eq('village', window.fbState.activeVillage),
+    supabase.from('fb_houses').select('*').eq('village', window.fbState.activeVillage)
+  ]).then(function(results) {
+    var countsRes = results[0];
+    var housesRes = results[1];
+    
+    if (housesRes.data) {
+        window.fbState.houses = housesRes.data;
+    } else {
+        window.fbState.houses = [];
+    }
+
+    var data = countsRes.data || [];
     data.forEach(function(c) {
        if (c.remarks && typeof c.remarks === 'string' && c.remarks.indexOf('{') === 0) {
            try {
@@ -476,7 +497,7 @@ function fbRenderSubView() {
   if (dashEl) dashEl.style.display = hasProj ? 'block' : 'none';
   
   var entryEl = document.getElementById('fb-nav-entry');
-  if (entryEl) entryEl.style.display = (hasProj && !isMother) ? 'block' : 'none';
+  if (entryEl) entryEl.style.display = hasProj ? 'block' : 'none';
   
   var bulkEl = document.getElementById('fb-nav-bulk');
   if (bulkEl) bulkEl.style.display = (hasProj && !isMother) ? 'block' : 'none';
