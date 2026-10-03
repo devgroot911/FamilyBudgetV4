@@ -1372,9 +1372,8 @@ function renderProfile() {
             '<div class="field"><label>Username</label><input id="new-user-username" required placeholder="Unique Login ID"></div>' +
             '<div class="form-grid">' +
               '<div class="field"><label>Password</label><input id="new-user-password" type="text" required placeholder="Account Password"></div>' +
-              '<div class="field"><label>Name / Identifier</label><input id="new-user-name" required placeholder="e.g. Jane (Mother)"></div>' +
+              '<div class="field"><label>Name / Identifier</label><input id="new-user-name" required placeholder="e.g. Jane"></div>' +
               '<div class="field"><label>Role (Permissions)</label><select id="new-user-role"><option value="mother">Mother (Data Entry)</option><option value="village_director">Village Director</option><option value="accounts_assistant">Accounts Assistant</option><option value="accountant">Accountant</option><option value="national_director">National Director</option><option value="admin">System Admin</option></select></div>' +
-              '<div class="field"><label>User Type (Display)</label><select id="new-user-usertype"><option value="Mother / YCCW">Mother / YCCW</option><option value="Father / Guardian">Father / Guardian</option><option value="Village Director">Village Director</option><option value="Accounts Assistant">Accounts Assistant</option><option value="System Admin">System Admin</option><option value="Other">Other</option></select></div>' +
               '<div class="field"><label>Village</label><input id="new-user-village" required placeholder="e.g. Piliyandala" onblur="window.refreshHouseDropdown(this.value)"></div>' +
               '<div class="field"><label>House (For Mothers)</label>' +
                 '<div style="display:flex; gap:10px;">' +
@@ -1384,8 +1383,6 @@ function renderProfile() {
                   '<input id="new-user-house-input" placeholder="New House No." style="flex:1; display:none;">' +
                 '</div>' +
               '</div>' +
-              '<div class="field"><label>Phone Number</label><input id="new-user-phone" required placeholder="07XXXXXXXX"></div>' +
-              '<div class="field"><label>Email Address</label><input id="new-user-email" type="email" placeholder="(Optional)"></div>' +
             '</div>' +
             '<div class="button-row"><button class="primary-button" type="submit" id="add-user-submit">Create User</button><button class="ghost-button" type="button" id="cancel-edit" style="display:none">Cancel</button></div>' +
           '</form>' +
@@ -1496,20 +1493,10 @@ function renderProfile() {
       document.querySelector('#new-user-name').value = user.name || '';
       document.querySelector('#new-user-role').value = user.role || 'mother';
       
-      var defaultUsertype = 'Other';
-      if (user.role === 'mother') defaultUsertype = 'Mother / YCCW';
-      else if (user.role === 'village_director') defaultUsertype = 'Village Director';
-      else if (user.role === 'accounts_assistant') defaultUsertype = 'Accounts Assistant';
-      else if (user.role === 'admin' || user.role === 'accountant') defaultUsertype = 'System Admin';
-      
-      document.querySelector('#new-user-usertype').value = user.usertype || defaultUsertype;
       document.querySelector('#new-user-village').value = user.village || '';
       
       // Load the house dropdown and pre-select the user's house
       window.refreshHouseDropdown(user.village, user.house);
-      
-      document.querySelector('#new-user-phone').value = user.phone || '';
-      document.querySelector('#new-user-email').value = user.email || '';
       
       document.querySelector('#user-form-title').textContent = 'Edit User';
       document.querySelector('#add-user-submit').textContent = 'Update User';
@@ -1560,15 +1547,22 @@ function renderProfile() {
         }
       }
 
+      var r = document.querySelector('#new-user-role').value;
+      var defaultUsertype = 'Other';
+      if (r === 'mother') defaultUsertype = 'Mother / YCCW';
+      else if (r === 'village_director') defaultUsertype = 'Village Director';
+      else if (r === 'accounts_assistant') defaultUsertype = 'Accounts Assistant';
+      else if (r === 'admin' || r === 'accountant') defaultUsertype = 'System Admin';
+
       var payload = {
         name: document.querySelector('#new-user-name').value.trim(),
         password: document.querySelector('#new-user-password').value.trim(),
-        role: document.querySelector('#new-user-role').value,
-        usertype: document.querySelector('#new-user-usertype').value,
+        role: r,
+        usertype: defaultUsertype,
         village: document.querySelector('#new-user-village').value.trim(),
         house: getHouseValue(),
-        phone: document.querySelector('#new-user-phone').value.trim(),
-        email: document.querySelector('#new-user-email').value.trim()
+        phone: '',
+        email: ''
       };
 
       function resetForm() {
