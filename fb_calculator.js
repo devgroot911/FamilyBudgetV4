@@ -670,15 +670,23 @@ function fbRenderEntry(container) {
   
   if (hNo) {
     var houseData = activeHouses.find(function(h) { return h.house_no === hNo; });
-    var prev = getPreviousBalances(hNo, window.fbState.activeYear, window.fbState.activeMonth);
-    var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(hNo); }) || {};
-    var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
     
-    html += '<hr style="margin:15px 0; border:0; border-top:1px solid #eee;">' +
-      '<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">' +
-        '<h3 style="margin:0; font-size:16px;">Data Entry</h3>' +
-        (window.fbState.hasUnsavedChanges ? '<span class="fb-danger" style="font-weight:bold; padding:4px 8px; border-radius:4px;">Unsaved Changes</span>' : '') +
-      '</div>';
+    if (!houseData || !houseData.assigned_username) {
+        html += '<hr style="margin:15px 0; border:0; border-top:1px solid #eee;">' +
+          '<div class="fb-box" style="border:2px solid #e74c3c; background:#fdf2f0; margin-bottom:15px; text-align:center; padding:20px;">' +
+            '<h3 style="color:#c0392b; margin:0 0 10px 0;">House Not Assigned</h3>' +
+            '<p style="margin:0; font-size:14px; color:#555;">This house does not currently have a Mother assigned to it. Expenses cannot be entered for unassigned houses.</p>' +
+          '</div>';
+    } else {
+        var prev = getPreviousBalances(hNo, window.fbState.activeYear, window.fbState.activeMonth);
+        var counts = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(hNo); }) || {};
+        var calcs = calculateHouseBudget(counts, window.fbState.rateVariables, prev);
+        
+        html += '<hr style="margin:15px 0; border:0; border-top:1px solid #eee;">' +
+          '<div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">' +
+            '<h3 style="margin:0; font-size:16px;">Data Entry</h3>' +
+            (window.fbState.hasUnsavedChanges ? '<span class="fb-danger" style="font-weight:bold; padding:4px 8px; border-radius:4px;">Unsaved Changes</span>' : '') +
+          '</div>';
       
     if (prev.isManual) {
        html += '<div class="fb-box" style="border:2px solid #f39c12; background:#fef9e7; margin-bottom:15px;">' +
@@ -724,6 +732,7 @@ function fbRenderEntry(container) {
           '<button class="primary-button" style="width:100%; padding:8px 0; font-size:14px; font-weight:bold; background:#16a085; border-color:#16a085;" onclick="fbReviewAndSave(\''+hNo+'\')">Review & Save</button>' +
         '</div>' +
       '</div>';
+    }
   }
   html += '</div>';
   
@@ -1102,6 +1111,7 @@ window.fbDownloadBulkTemplate = function() {
   var ws2_data = [['House No', 'Food Balance', 'Clothing Balance', 'Household Balance', 'Interest Balance']];
 
   houses.forEach(function(h) {
+    if (!h.assigned_username) return; // Skip unassigned houses
     ws1_data.push([h.house_no, vName, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
     ws2_data.push([h.house_no, '', '', '', '']);
   });
@@ -1139,7 +1149,9 @@ function fbValidateAndCalculateBulk(workbook) {
   var errorDiv = document.getElementById('fb-bulk-errors');
   var vName = window.fbState.activeVillage;
   var houses = getVillageHouses(vName);
-  var expectedHouseNumbers = houses.map(function(h) { return String(h.house_no); });
+  var expectedHouseNumbers = houses
+    .filter(function(h) { return !!h.assigned_username; })
+    .map(function(h) { return String(h.house_no); });
   
   var sheet1Name = workbook.SheetNames[0];
   var sheet2Name = workbook.SheetNames[1];
