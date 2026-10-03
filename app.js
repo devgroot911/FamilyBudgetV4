@@ -1392,7 +1392,7 @@ function renderProfile() {
         '</div>' +
         '<div class="panel">' +
           '<div class="section-heading"><div><h2>Active Users</h2><small>Loaded from cloud</small></div></div>' +
-          '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead><tbody id="user-table-body"><tr><td colspan="4" class="empty">Loading users...</td></tr></tbody></table></div>' +
+          '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Village</th><th>House</th><th>Actions</th></tr></thead><tbody id="user-table-body"><tr><td colspan="6" class="empty">Loading users...</td></tr></tbody></table></div>' +
         '</div>' +
       '</div>';
   
@@ -1400,21 +1400,27 @@ function renderProfile() {
       supabase.from('users').select('*').then(function(res) {
         var tbody = document.querySelector('#user-table-body');
         if (res.error || !res.data || !res.data.length) {
-          if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="empty">No users found.</td></tr>';
+          if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty">No users found.</td></tr>';
           return;
         }
         window.loadedUsers = res.data;
         if (tbody) {
           tbody.innerHTML = res.data.map(function(u) {
             var isMaster = u.username.toLowerCase() === 'admin' || u.username.toLowerCase() === 'master';
-            return '<tr><td><strong>' + escapeHtml(u.name) + '</strong></td><td>' + escapeHtml(u.username) + '</td><td><span class="badge ' + u.role + '">' + u.role + '</span></td><td>' +
-              (isMaster ? '' : '<button class="ghost-button" onclick="editUser(\'' + escapeHtml(u.username) + '\')">Edit</button> <button class="ghost-button" onclick="deleteUser(\'' + escapeHtml(u.username) + '\')">Delete</button>') +
+            return '<tr>' +
+              '<td><strong>' + escapeHtml(u.name) + '</strong></td>' +
+              '<td>' + escapeHtml(u.username) + '</td>' +
+              '<td><span class="badge ' + escapeHtml(u.role) + '">' + escapeHtml(u.usertype || u.role) + '</span></td>' +
+              '<td>' + escapeHtml(u.village || '-') + '</td>' +
+              '<td>' + escapeHtml(u.house || '-') + '</td>' +
+              '<td>' +
+              (isMaster ? '' : '<button class="ghost-button" onclick="editUser(\'' + escapeHtml(u.username) + '\')">Edit</button> <button class="ghost-button" style="color:red;" onclick="deleteUser(\'' + escapeHtml(u.username) + '\')">Delete</button>') +
               '</td></tr>';
           }).join('');
         }
       }).catch(function() {
         var tbody = document.querySelector('#user-table-body');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="empty">Failed to load users.</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty">Failed to load users.</td></tr>';
       });
     }
     loadUsers();
