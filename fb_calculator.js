@@ -70,10 +70,11 @@ document.head.appendChild(style);
 // ------------------------------------------------------------------
 window.fbAlert = function(msg, callback) {
     var html = '<div class="fb-modal-header"><span>Notification</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">&times;</button></div>' +
-               '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\\n/g, '<br>') + '</p></div>' +
+               '<div class="fb-modal-body"><p id="fb-alert-msg" style="margin:0; white-space: pre-wrap; word-break: break-word;"></p></div>' +
                '<div class="fb-modal-footer"><button class="ghost-button" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">Go Back</button>' +
                '<button class="primary-button" id="fb-alert-btn">OK</button></div>';
     document.getElementById('fb-modal-content').innerHTML = html;
+    document.getElementById('fb-alert-msg').textContent = msg;
     // Do not lock page scrolling
     document.getElementById('fb-modal-overlay').style.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight) + 'px';
     document.getElementById('fb-modal-content').style.marginTop = (window.scrollY + 20) + 'px';
@@ -86,10 +87,11 @@ window.fbAlert = function(msg, callback) {
 
 window.fbConfirm = function(msg, onYes, onNo) {
     var html = '<div class="fb-modal-header"><span>Please Confirm</span><button class="fb-modal-close" onclick="document.getElementById(\'fb-modal-overlay\').style.display=\'none\';">&times;</button></div>' +
-               '<div class="fb-modal-body"><p style="margin:0;">' + msg.replace(/\\n/g, '<br>') + '</p></div>' +
+               '<div class="fb-modal-body"><p id="fb-confirm-msg" style="margin:0; white-space: pre-wrap; word-break: break-word;"></p></div>' +
                '<div class="fb-modal-footer"><button class="ghost-button" id="fb-confirm-no">Go Back</button>' +
                '<button class="primary-button" id="fb-confirm-yes">Proceed</button></div>';
     document.getElementById('fb-modal-content').innerHTML = html;
+    document.getElementById('fb-confirm-msg').textContent = msg;
     // Do not lock page scrolling
     document.getElementById('fb-modal-overlay').style.height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight) + 'px';
     document.getElementById('fb-modal-content').style.marginTop = (window.scrollY + 20) + 'px';
@@ -1106,7 +1108,7 @@ window.fbProcessBulkUpload = function() {
       var workbook = XLSX.read(data, {type: 'array'});
       fbValidateAndCalculateBulk(workbook);
     } catch(err) {
-      errorDiv.innerHTML = 'Error reading Excel file: ' + err.message;
+      errorDiv.textContent = 'Error reading Excel file: ' + err.message;
     }
   };
   reader.readAsArrayBuffer(file);
@@ -1121,7 +1123,10 @@ function fbValidateAndCalculateBulk(workbook) {
   var sheet1Name = workbook.SheetNames[0];
   var sheet2Name = workbook.SheetNames[1];
   
-  if (!sheet1Name) return errorDiv.innerHTML = 'Excel file must have at least one sheet.';
+  if (!sheet1Name) {
+    errorDiv.textContent = 'Excel file must have at least one sheet.';
+    return;
+  }
   var ws1 = XLSX.utils.sheet_to_json(workbook.Sheets[sheet1Name]);
   var ws2 = sheet2Name ? XLSX.utils.sheet_to_json(workbook.Sheets[sheet2Name]) : [];
   
@@ -1141,7 +1146,9 @@ function fbValidateAndCalculateBulk(workbook) {
   });
   
   if (errors.length > 0) {
-    return errorDiv.innerHTML = 'Validation Failed:<br>• ' + errors.join('<br>• ');
+    errorDiv.style.whiteSpace = 'pre-wrap';
+    errorDiv.textContent = 'Validation Failed:\n• ' + errors.join('\n• ');
+    return;
   }
   
   var allPayloads = [];
@@ -1209,7 +1216,9 @@ function fbValidateAndCalculateBulk(workbook) {
   });
   
   if (errors.length > 0) {
-    return errorDiv.innerHTML = 'Validation Failed:<br>• ' + errors.join('<br>• ');
+    errorDiv.style.whiteSpace = 'pre-wrap';
+    errorDiv.textContent = 'Validation Failed:\n• ' + errors.join('\n• ');
+    return;
   }
   
   // Calculate Budgets
