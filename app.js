@@ -431,13 +431,18 @@ function fetchCloudData() {
     .then(function(userRes) {
       if (!userRes.error && userRes.data) {
         window.loadedUsers = userRes.data;
-        if (!state.profiles) state.profiles = {};
+        var freshProfiles = {};
+        if (state.profiles && state.profiles['Master']) freshProfiles['Master'] = state.profiles['Master'];
+        var myName = sessionStorage.getItem('username');
+        if (myName && state.profiles && state.profiles[myName]) freshProfiles[myName] = state.profiles[myName];
+        
         userRes.data.forEach(function(u) {
             var rType = u.usertype;
             if (!rType) rType = (u.role === 'mother') ? 'Mother / YCCW' : u.role;
-            state.profiles[u.username] = { name: u.name || '', usertype: rType, village: u.village || '', house: u.house || '', phone: u.phone || '', email: u.email || '', role: u.role };
-          });
-          save();
+            freshProfiles[u.username] = { name: u.name || '', usertype: rType, village: u.village || '', house: u.house || '', phone: u.phone || '', email: u.email || '', role: u.role };
+        });
+        state.profiles = freshProfiles;
+        save();
       }
       fetchGlobalFbData();
       notify('Cloud sync complete');
