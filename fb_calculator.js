@@ -224,7 +224,7 @@ function getVillageHouses(vName) {
   var houses = [];
   if (window.fbState && window.fbState.houses) {
       window.fbState.houses.forEach(function(h) {
-          if (h.village.toLowerCase() === vName.toLowerCase()) {
+          if (h.village && h.village.trim().toLowerCase() === vName.trim().toLowerCase()) {
              if (fbRole === 'mother' && h.assigned_mother_username !== myUsername) return;
              var mName = "Unassigned";
              if (h.assigned_mother_username && window.state && window.state.profiles && window.state.profiles[h.assigned_mother_username]) {
