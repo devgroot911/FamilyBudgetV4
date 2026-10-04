@@ -1772,11 +1772,16 @@ document.addEventListener('submit', function(event) {
       return notify('Cannot add expense: No eligible mothers assigned to houses.');
   }
 
+  var itemName = document.querySelector('#expense-name').value.trim();
+  if (!itemName) {
+      return notify('Please select an item from the catalog.');
+  }
+
   var expenseId = document.querySelector('#expense-id') ? document.querySelector('#expense-id').value : '';
   var expense = {
     user: userField ? userField.value : (sessionStorage.getItem('username') || 'mother'),
       date: document.querySelector('#expense-date').value || today(),
-      name: document.querySelector('#expense-name').value.trim(),
+      name: itemName,
       category: Number(document.querySelector('#expense-category').value),
       subcategory: Number(document.querySelector('#expense-subcategory').value),
       quantity: quantity,
