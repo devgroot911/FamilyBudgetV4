@@ -621,7 +621,7 @@ window.fbSelectVillage = function(vName) {
 function fbRenderDashboard(container) {
   var vName = window.fbState.activeVillage;
   if (!vName) return;
-  var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0;
+  var totalBudget = 0, totalFood = 0, totalClothing = 0, totalHH = 0, totalInterest = 0;
   
   var houses = getVillageHouses(vName);
   houses.forEach(function(h) {
@@ -632,6 +632,7 @@ function fbRenderDashboard(container) {
     totalFood += calcs.total_food;
     totalClothing += calcs.total_clothing;
     totalHH += calcs.total_hh;
+    totalInterest += (calcs.interest_balance || 0);
   });
   
   container.innerHTML = 
@@ -642,6 +643,7 @@ function fbRenderDashboard(container) {
         '<div class="fb-box"><span class="fb-label">Food Allocated</span><div class="fb-value">LKR ' + totalFood.toLocaleString() + '</div></div>' +
         '<div class="fb-box"><span class="fb-label">Clothing Allocated</span><div class="fb-value">LKR ' + totalClothing.toLocaleString() + '</div></div>' +
         '<div class="fb-box"><span class="fb-label">Household Allocated</span><div class="fb-value">LKR ' + totalHH.toLocaleString() + '</div></div>' +
+        (getFbRole() !== 'mother' ? '<div class="fb-box"><span class="fb-label">Interest Balance</span><div class="fb-value" style="color:#27ae60;">LKR ' + totalInterest.toLocaleString(undefined, {minimumFractionDigits:2}) + '</div></div>' : '') +
       '</div>' +
     '</div>';
 }

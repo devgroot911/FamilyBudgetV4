@@ -262,6 +262,7 @@ function getFbBalance(categoryId, period, optHouse, optVillage) {
     if (categoryId === 1) sum += (r.calcs.food_balance || 0);
     else if (categoryId === 2) sum += (r.calcs.household_balance || 0);
     else if (categoryId === 3) sum += (r.calcs.clothing_balance || 0);
+    else if (categoryId === 'interest') sum += (r.calcs.interest_balance || 0);
   });
   return sum;
 }
@@ -1148,6 +1149,10 @@ function renderAllowances() {
               '<span>' + c.name + ' Balance:</span><strong style="color:#27ae60;">' + money(getFbBalance(c.id, cm, targetHouse, targetVillage)) + '</strong></div>';
   });
   
+  if (!isMother) {
+    html += '<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #bbd6ef; padding-bottom:4px;">' +
+      '<span>Interest Balance:</span><strong style="color:#27ae60;">' + money(getFbBalance('interest', cm, targetHouse, targetVillage)) + '</strong></div>';
+  }
   html += '</div></div>' +
       '<div class="panel">' +
         '<div class="section-heading"><div><h2>Month at a glance</h2><small>Allowance vs actual spending</small></div></div>';
