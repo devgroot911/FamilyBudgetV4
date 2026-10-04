@@ -378,7 +378,7 @@ function loadFbData() {
       if (v && v.toLowerCase() !== 'all' && uniqueVillages.indexOf(v) === -1) uniqueVillages.push(v);
     });
   }
-  if (myVillage.toLowerCase() === 'all' || ['admin','national','accountant','assistant'].indexOf(getFbRole()) !== -1) {
+  if (myVillage.toLowerCase() === 'all' || ['admin','national'].indexOf(getFbRole()) !== -1) {
     window.fbState.myVillages = uniqueVillages;
   } else {
     window.fbState.myVillages = uniqueVillages.filter(function(v) { return v.toLowerCase() === myVillage.toLowerCase(); });
