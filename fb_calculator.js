@@ -1186,14 +1186,14 @@ window.fbDownloadBulkTemplate = function() {
   var houses = getVillageHouses(vName);
   
   // Sheet 1: Current Entries
-  var ws1_data = [['House No', 'Project Name', 'Children (Over 12)', 'Children (Under 12)', 'Mother Count', 'Aunt Amount', 'Special Allowances / Adjustments', 'Festival', 'Clothing Withdrawal', 'Household Withdrawal', 'Interest Earned', 'Arrears / Bank Charges']];
+  var ws1_data = [['House No', 'Project Name', 'Children (Over 12)', 'Children (Under 12)', 'Mother Count', 'Aunt Amount', 'Special Allowances / Adjustments', 'Clothing Withdrawal', 'Household Withdrawal', 'Interest Earned', 'Arrears / Bank Charges']];
   
   // Sheet 2: Opening Balances (Optional Fallback)
   var ws2_data = [['House No', 'Food Balance', 'Clothing Balance', 'Household Balance', 'Interest Balance']];
 
   houses.forEach(function(h) {
     if (!h.assigned_username) return; // Skip unassigned houses
-    ws1_data.push([h.house_no, vName, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+    ws1_data.push([h.house_no, vName, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
     ws2_data.push([h.house_no, '', '', '', '']);
   });
 
@@ -1294,7 +1294,7 @@ function fbValidateAndCalculateBulk(workbook) {
       mother_count: getNum(row['Mother Count'], 'Mother Count'),
       aunt_amount: getNum(row['Aunt Amount'], 'Aunt Amount'),
       adjustment: getNum(row['Special Allowances / Adjustments'] !== undefined ? row['Special Allowances / Adjustments'] : row['Adjustment'], 'Special Allowances / Adjustments'),
-      festival: getNum(row['Festival'], 'Festival'),
+      // festival column removed to prevent mistaken data entry
       clothing_o12: getNum(row['Clothing Withdrawal'], 'Clothing Withdrawal'), // mapped correctly
       clothing_u12: getNum(row['Household Withdrawal'], 'Household Withdrawal'), // mapped correctly
       household: getNum(row['Interest Earned'], 'Interest Earned'), // mapped correctly
