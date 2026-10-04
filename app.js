@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * APP.JS - CORE APPLICATION LOGIC & ROUTING
+ * ============================================================================
+ * FILE OVERVIEW:
+ * This is the heart of the web app. It controls User Authentication, the 
+ * Navigation Menu, General Expenses tracking, and Administrative settings.
+ * 
+ * It relies on a global `state` object to cache data locally, ensuring the app 
+ * remains fast and can operate even with intermittent internet connections.
+ * ============================================================================
+ */
+
+
 // ============================================================
 // FAMILY BUDGET V4 - app.js
 // Compatible with older Android browsers - NO async/await
@@ -411,6 +425,12 @@ function fetchGlobalFbData() {
   }).catch(function(e){ console.error("Global FB Data Error: ", e); });
 }
 
+
+/**
+ * ------------------------------------------------------------------
+ * CLOUD SYNC: Connects to the Supabase database to download all 
+ * users, profiles, items, and expenses. Keeps the app up-to-date. * ------------------------------------------------------------------
+ */
 function fetchCloudData() {
   if (!supabase) return notify('Database not connected');
   notify('Syncing with cloud...');
@@ -497,6 +517,13 @@ function makeReport(start, end) {
 // ============================================================
 // --- UI Render ---
 // ============================================================
+
+/**
+ * ------------------------------------------------------------------
+ * MASTER UI CONTROLLER: Based on the `activeView` state (Dashboard, 
+ * Expenses, Users, etc.), this clears the screen and calls the 
+ * appropriate sub-render function. * ------------------------------------------------------------------
+ */
 function render() {
   if (!isLoggedIn) {
     document.body.classList.add('logged-out');
@@ -812,6 +839,12 @@ function enhanceExpenseForm() {
   refreshItems();
 }
 
+
+/**
+ * ------------------------------------------------------------------
+ * Builds the 'Add Expense' interface. Enforces policies such as 
+ * blocking Mothers who are not assigned to a house. * ------------------------------------------------------------------
+ */
 function renderExpenses() {
   var visibleExpenses = getVisibleExpenses();
   var todayItems = visibleExpenses.filter(function(i) { return i.date === today(); });

@@ -1,6 +1,27 @@
+/**
+ * ============================================================================
+ * FB_CALCULATOR.JS - FAMILY BUDGET ENGINE
+ * ============================================================================
+ * FILE OVERVIEW:
+ * This standalone module handles the complex financial tracking for Houses.
+ * It manages monthly allowances for Food, Clothing, Household, and Interest.
+ * 
+ * Security Note: Logic inside `getVillageHouses` strictly limits what normal 
+ * "Mothers" can see, protecting data privacy across the village.
+ * ============================================================================
+ */
+
+
 // FB Calculator Module (Vanilla JS - Strict ES5/ES6 Promise chains)
 
 var today = new Date();
+
+/**
+ * ------------------------------------------------------------------
+ * GLOBAL STATE OBJECT: Stores all cached data (houses, child 
+ * counts, rates) to minimize database calls and allow 
+ * offline/instant calculations. * ------------------------------------------------------------------
+ */
 window.fbState = {
   myVillages: [],
   activeVillage: null,
@@ -110,6 +131,13 @@ window.fbConfirm = function(msg, onYes, onNo) {
 // ------------------------------------------------------------------
 // Core Business Logic
 // ------------------------------------------------------------------
+
+/**
+ * ------------------------------------------------------------------
+ * Retrieves the ending financial balances from the previous month 
+ * for a given house. If no previous month exists, it flags it as 
+ * 'manual' so the user can enter starting balances. * ------------------------------------------------------------------
+ */
 function getPreviousBalances(houseNo, targetYear, targetMonth) {
   var history = window.fbState.historicalCounts.filter(function(c) {
       if (String(c.house_no) !== String(houseNo)) return false;
@@ -146,6 +174,13 @@ function getPreviousBalances(houseNo, targetYear, targetMonth) {
   };
 }
 
+
+/**
+ * ------------------------------------------------------------------
+ * CORE MATH ENGINE: Takes raw counts (demographics) and applies 
+ * financial rates to calculate the exact allocated budget and 
+ * ending balances for Food, Clothing, Household, and Interest. * ------------------------------------------------------------------
+ */
 function calculateHouseBudget(houseCounts, rates, prevBalances) {
   if (!prevBalances) prevBalances = { food: 0, clothing: 0, household: 0, interest: 0 };
   
@@ -217,6 +252,14 @@ function getFbRole() {
 }
 function canAccessFb() { return getFbRole() !== 'viewer'; }
 
+
+/**
+ * ------------------------------------------------------------------
+ * Filters the list of all houses to only show those belonging to 
+ * the currently selected village. If a Mother is logged in, it 
+ * strictly filters the list to ONLY show the house she is assigned 
+ * to. * ------------------------------------------------------------------
+ */
 function getVillageHouses(vName) {
   if (!vName) return [];
   var fbRole = getFbRole();
@@ -264,6 +307,13 @@ window.fbExcelInput = function(elem, houseNo, field) {
   }
 };
 
+
+/**
+ * ------------------------------------------------------------------
+ * Called every time a user types in a data entry field. It 
+ * instantly recalculates the `calculateHouseBudget` math and 
+ * updates the green/red balances on the screen. * ------------------------------------------------------------------
+ */
 window.fbUpdateLiveBalances = function(houseNo) {
   var existing = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(houseNo); });
   var prev = getPreviousBalances(houseNo, window.fbState.activeYear, window.fbState.activeMonth);
@@ -308,6 +358,13 @@ window.fbChangePeriod = function() {
   else proceed();
 };
 
+
+/**
+ * ------------------------------------------------------------------
+ * Master initialization function for the FB Calculator. Called when 
+ * the user switches to the FB Calculator tab. Sets up the UI, 
+ * default dates, and triggers data loading. * ------------------------------------------------------------------
+ */
 function loadFbData() {
   window.fbState.loading = true;
   window.fbState.hasUnsavedChanges = false;
@@ -346,6 +403,12 @@ function loadFbData() {
     });
 }
 
+
+/**
+ * ------------------------------------------------------------------
+ * Connects to Supabase to download all houses and historical budget 
+ * records for the currently selected village. * ------------------------------------------------------------------
+ */
 function loadVillageData() {
   if (!window.fbState.activeVillage) return;
   window.fbState.loading = true;
@@ -642,6 +705,12 @@ window.fbEditHouseForm = function(hNo, selectElement) {
   proceed();
 };
 
+
+/**
+ * ------------------------------------------------------------------
+ * UI GENERATOR: Builds the HTML for the main Data Entry form where 
+ * Mothers/Admins enter their monthly child counts and withdrawals. * ------------------------------------------------------------------
+ */
 function fbRenderEntry(container) {
   var vName = window.fbState.activeVillage;
   if (!vName) return;
@@ -786,6 +855,13 @@ window.fbDownloadTemplate = function() {
   XLSX.writeFile(wb, vName + "_Summary.xlsx");
 };
 
+
+/**
+ * ------------------------------------------------------------------
+ * Called when the user clicks 'Review & Save'. It recalculates the 
+ * final math one last time, builds a save payload, and shows a 
+ * confirmation modal to the user. * ------------------------------------------------------------------
+ */
 window.fbReviewAndSave = function(houseNo) {
   var existing = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(houseNo); });
   if (!existing) return fbAlert("No data to save.");
@@ -1145,6 +1221,13 @@ window.fbProcessBulkUpload = function() {
   reader.readAsArrayBuffer(file);
 };
 
+
+/**
+ * ------------------------------------------------------------------
+ * EXCEL PARSER: Reads an uploaded Excel file, validates that all 
+ * houses in the village are present, checks for number formatting, 
+ * and calculates the math for every house at once. * ------------------------------------------------------------------
+ */
 function fbValidateAndCalculateBulk(workbook) {
   var errorDiv = document.getElementById('fb-bulk-errors');
   var vName = window.fbState.activeVillage;
@@ -1406,6 +1489,13 @@ window.fbConfirmBulkSave = function() {
 // ============================================================
 // Cross-House Transfers (Accountant Only)
 // ============================================================
+
+/**
+ * ------------------------------------------------------------------
+ * UI GENERATOR (Admin Only): Builds the interface allowing 
+ * accountants to move funds (transfer) between two different 
+ * houses, or between different accounts within the same house. * ------------------------------------------------------------------
+ */
 function fbRenderCrossHouse(container) {
   var vName = window.fbState.activeVillage;
   var houses = getVillageHouses(vName);
