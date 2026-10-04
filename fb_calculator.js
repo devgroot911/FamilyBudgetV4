@@ -37,12 +37,12 @@ window.fbState = {
 };
 
 var DEFAULT_RATES = {
-  food_o12_rate: 6300,
-  food_u12_rate: 4500,
-  clothing_o12_rate: 2500,
-  clothing_u12_rate: 2100,
-  household_rate: 1500,
-  mother_food_rate: 6300,
+  food_o12_rate: 1,
+  food_u12_rate: 1,
+  clothing_o12_rate: 1,
+  clothing_u12_rate: 1,
+  household_rate: 1,
+  mother_food_rate: 1,
   first_pct: 66.6,
   second_pct: 33.4,
   savings_pct: 5.0000
