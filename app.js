@@ -407,6 +407,7 @@ function fetchGlobalFbData() {
      counts.forEach(function(r) {
         var dummyPrev = { food: r.open_food || 0, clothing: r.open_cloth || 0, household: r.open_hh || 0, interest: r.open_int || 0 };
         var mAdj = { food: r.manual_adj_food || 0, clothing: r.manual_adj_cloth || 0, household: r.manual_adj_hh || 0, interest: r.manual_adj_int || 0 };
+        var savedEnding = null;
         if (r.remarks) {
            try {
               var rem = JSON.parse(r.remarks);
@@ -416,9 +417,17 @@ function fetchGlobalFbData() {
                  mAdj.household = rem.manual_adjustments.hh || mAdj.household;
                  mAdj.interest = rem.manual_adjustments.int || mAdj.interest;
               }
+              if (rem.ending) savedEnding = rem.ending;
            } catch(e) {}
         }
         r.calcs = (typeof calculateHouseBudget === 'function') ? calculateHouseBudget(r, rates, dummyPrev, mAdj) : {};
+        
+        if (savedEnding) {
+           r.calcs.food_balance = savedEnding.food;
+           r.calcs.clothing_balance = savedEnding.cloth;
+           r.calcs.household_balance = savedEnding.hh;
+           r.calcs.interest_balance = savedEnding.int;
+        }
      });
      
      window.appState.fbAllocations = counts;
