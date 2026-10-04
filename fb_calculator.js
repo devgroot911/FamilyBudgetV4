@@ -603,6 +603,9 @@ function fbRenderProjects(container) {
 }
 
 window.fbSelectVillage = function(vName) {
+  if (window.fbState.myVillages && window.fbState.myVillages.indexOf(vName) === -1) {
+      return fbAlert('Access Denied: You do not have permission to view or edit this village.');
+  }
   var proceed = function() {
       window.fbState.hasUnsavedChanges = false;
       window.fbState.activeVillage = vName;
