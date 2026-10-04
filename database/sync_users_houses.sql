@@ -1,3 +1,17 @@
+-- ============================================================================
+-- DATA INTEGRITY: USERS & HOUSES SYNC (sync_users_houses.sql)
+-- ============================================================================
+-- OVERVIEW:
+-- Because the system has both a `users` table (for logins/profiles) and an 
+-- `fb_houses` table (for budget tracking), this script creates an automated 
+-- Database Trigger to keep them perfectly synchronized.
+-- 
+-- MECHANISM:
+-- Whenever an Admin changes a house's assigned mother in `fb_houses`, this 
+-- trigger automatically updates the `users` table so the Active Users UI 
+-- displays the correct information, preventing "ghost" assignments.
+-- ============================================================================
+
 -- 1. First, clear all house assignments in the users table to reset the display data
 UPDATE public.users SET house = '';
 

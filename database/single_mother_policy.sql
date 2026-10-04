@@ -1,3 +1,15 @@
+-- ============================================================================
+-- SECURITY POLICY: SINGLE MOTHER CONSTRAINT (single_mother_policy.sql)
+-- ============================================================================
+-- OVERVIEW:
+-- This script enforces a strict business rule: A mother can only be assigned 
+-- to ONE house at a time across the entire system.
+-- 
+-- MECHANISM: 
+-- It cleans up any existing duplicate assignments and applies a UNIQUE 
+-- constraint on the `assigned_mother_username` column in `fb_houses`.
+-- ============================================================================
+
 -- Clean up any existing duplicates first using the correct primary keys
 UPDATE public.fb_houses 
 SET assigned_mother_username = NULL 

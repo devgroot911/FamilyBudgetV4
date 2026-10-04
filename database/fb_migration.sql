@@ -1,3 +1,14 @@
+-- ============================================================================
+-- DATABASE SETUP: FAMILY BUDGET TABLES (fb_migration.sql)
+-- ============================================================================
+-- OVERVIEW:
+-- This script contains the foundational schema for the Family Budget feature.
+-- It creates the `fb_child_counts` table (the primary ledger for expenses) 
+-- and the `fb_rates` table (which holds the financial configuration rules).
+-- 
+-- USAGE: Run this once when setting up a fresh Supabase database.
+-- ============================================================================
+
 -- FB Calculator Tables (Additive Only)
 
 CREATE TABLE IF NOT EXISTS fb_projects (

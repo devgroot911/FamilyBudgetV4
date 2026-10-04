@@ -1,3 +1,13 @@
+-- ============================================================================
+-- ARCHITECTURE UPDATE: DECOUPLING HOUSES (migrate_houses.sql)
+-- ============================================================================
+-- OVERVIEW:
+-- Historically, houses were just a text field attached to a Mother's profile.
+-- This script restructures the database by creating a dedicated `fb_houses` 
+-- table, making "Houses" independent entities. This ensures that if a mother 
+-- leaves or is reassigned, the house's financial history remains intact.
+-- ============================================================================
+
 -- 1. Create the fb_houses table
 CREATE TABLE IF NOT EXISTS public.fb_houses (
     house_no text PRIMARY KEY,

@@ -1,3 +1,13 @@
+-- ============================================================================
+-- DATABASE SETUP: DEFAULT RATES (fb_seed.sql)
+-- ============================================================================
+-- OVERVIEW:
+-- This script injects the initial default financial rates into the `fb_rates` 
+-- table (e.g., how much to allocate for a child under 12, bank charges, etc.).
+-- 
+-- USAGE: Run this after `fb_migration.sql` to populate the settings panel.
+-- ============================================================================
+
 -- Demo Project Seed Data
 INSERT INTO fb_projects (id, name) VALUES ('d9b2d63d-4c3a-4f51-b01f-0e104e76c123', 'Demo Project 2025');
 
