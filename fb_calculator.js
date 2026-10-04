@@ -229,7 +229,24 @@ function calculateHouseBudget(houseCounts, rates, prevBalances) {
   var food_balance = prevBalances.food + savings + remaining_food - first_food_portion - second_withdrawal + manualAdjustments.food;
   var clothing_balance = prevBalances.clothing + total_clothing - actual_clothing_w + manualAdjustments.clothing;
   var household_balance = prevBalances.household + total_hh - actual_household_w + manualAdjustments.household;
+  
   var interest_balance = prevBalances.interest + interest_earned - bank_charges + manualAdjustments.interest;
+
+  if (houseCounts.remarks) {
+    try {
+      var rem = typeof houseCounts.remarks === 'string' ? JSON.parse(houseCounts.remarks) : houseCounts.remarks;
+      if (rem.savings !== undefined) savings = rem.savings;
+      if (rem.first_w !== undefined) first_withdrawal = rem.first_w;
+      if (rem.second_w !== undefined) second_withdrawal = rem.second_w;
+      if (rem.ending) {
+         if (rem.ending.food !== undefined) food_balance = rem.ending.food;
+         if (rem.ending.cloth !== undefined) clothing_balance = rem.ending.cloth;
+         if (rem.ending.hh !== undefined) household_balance = rem.ending.hh;
+         if (rem.ending.int !== undefined) interest_balance = rem.ending.int;
+      }
+    } catch(e) {}
+  }
+
 
   return {
     child_total: child_total, total_food: total_food, total_clothing: total_clothing, total_hh: total_hh,
@@ -334,11 +351,14 @@ window.fbUpdateLiveBalances = function(houseNo) {
 
 window.fbUpdateLocalCount = function(houseNo, field, val) {
   var existing = window.fbState.childCounts.find(function(c) { return String(c.house_no) === String(houseNo); });
+  
   if (!existing) {
     existing = { village: window.fbState.activeVillage, year: window.fbState.activeYear, month: window.fbState.activeMonth, house_no: String(houseNo) };
     window.fbState.childCounts.push(existing);
   }
+  delete existing.remarks;
   existing[field] = Number(val) || 0;
+
   window.fbState.hasUnsavedChanges = true;
   fbUpdateLiveBalances(houseNo);
 };
