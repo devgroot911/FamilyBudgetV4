@@ -1263,8 +1263,8 @@ function renderReports() {
       Object.keys(state.allowances || {}).forEach(function(key) {
         if (key.indexOf('_9999') !== -1 && Number(state.allowances[key]) === 1) {
           var parts = key.split('_');
-          var u = parts[0];
-          var m = parts[1];
+          var m = parts[parts.length - 2];
+          var u = parts.slice(0, parts.length - 2).join('_');
           if (state.profiles[u]) {
             if (state.profiles[u].usertype && state.profiles[u].usertype.toLowerCase().indexOf('admin') !== -1) return;
             if (isNational || state.profiles[u].village === myVillage) {
