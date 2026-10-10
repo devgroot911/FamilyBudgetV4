@@ -750,6 +750,100 @@ function renderDashboard() {
     '<div class="panel stat-card" style="border-top:3px solid #e67e22;"><span class="stat-label">Active Users</span><div class="stat-value">' + activeMothersCount + '</div><div class="stat-note">Submitting records</div></div>' +
     '<div class="panel stat-card" style="border-top:3px solid #95a5a6;"><span class="stat-label">Total Transactions</span><div class="stat-value">' + filteredExpenses.length + '</div><div class="stat-note">Count</div></div></div>';
 
+  
+  // --- TRAFFIC LIGHT SYSTEM (PROPOSAL ALIGNMENT) ---
+  function getTrafficColor(spent, budget) {
+     if (budget <= 0) return spent > 0 ? '#c0392b' : '#7f8c8d'; // Red if spent without budget, grey otherwise
+     var pct = (spent / budget) * 100;
+     if (pct > 100) return '#c0392b'; // Red (Over Budget)
+     if (pct >= 85) return '#f39c12'; // Amber (Near Limit)
+     return '#27ae60'; // Green (On Track)
+  }
+  
+  html += '<div class="panel content-gap"><div class="section-heading"><div><h2>Budget Health (Traffic Light)</h2><small>Green: On Track (<85%), Amber: Near Limit (85-100%), Red: Over Budget</small></div></div>';
+  html += '<div class="table-wrap"><table><thead>';
+  
+  if (isNational && ds.village === 'All') {
+     // NATIONAL VIEW: Rows are Villages
+     html += '<tr><th>Village</th><th>Food Status</th><th>Clothing Status</th><th>Household Status</th></tr></thead><tbody>';
+     var vStats = {};
+     // Populate vStats
+     filteredExpenses.forEach(function(e) {
+        var v = (state.profiles[e.user] || {}).village || 'Unknown';
+        if (!vStats[v]) vStats[v] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
+        if (e.category >= 1 && e.category <= 3) vStats[v][e.category].s += Number(e.total);
+     });
+     // Budgets
+     Object.keys(state.allowances || {}).forEach(function(key) {
+        if(key.indexOf('_9999') !== -1) return;
+        var parts = key.split('_');
+        var u = parts.slice(0, parts.length - 2).join('_');
+        var cid = parseInt(parts[parts.length - 1], 10);
+        if (cid >= 1 && cid <= 3) {
+           var v = (state.profiles[u] || {}).village || 'Unknown';
+           if (!vStats[v]) vStats[v] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
+           vStats[v][cid].b += Number(state.allowances[key] || 0);
+        }
+     });
+     
+     Object.keys(vStats).sort().forEach(function(v) {
+        html += '<tr><td><strong>'+escapeHtml(v)+'</strong></td>';
+        [1, 2, 3].forEach(function(cid) {
+           var stat = vStats[v][cid];
+           var color = getTrafficColor(stat.s, stat.b);
+           html += '<td><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:'+color+'; margin-right:8px;"></span>'+money(stat.s)+' / '+money(stat.b)+'</td>';
+        });
+        html += '</tr>';
+     });
+  } else if (isManager && ds.user === 'All') {
+     // VILLAGE VIEW: Rows are Mothers
+     html += '<tr><th>Household (Mother)</th><th>Food Status</th><th>Clothing Status</th><th>Household Status</th></tr></thead><tbody>';
+     var mStats = {};
+     filteredExpenses.forEach(function(e) {
+        var u = e.user;
+        if (!mStats[u]) mStats[u] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
+        if (e.category >= 1 && e.category <= 3) mStats[u][e.category].s += Number(e.total);
+     });
+     // Budgets
+     Object.keys(state.allowances || {}).forEach(function(key) {
+        if(key.indexOf('_9999') !== -1) return;
+        var parts = key.split('_');
+        var u = parts.slice(0, parts.length - 2).join('_');
+        var cid = parseInt(parts[parts.length - 1], 10);
+        if (cid >= 1 && cid <= 3) {
+           var p = state.profiles[u] || {};
+           if (p.village === ds.village) {
+              if (!mStats[u]) mStats[u] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
+              mStats[u][cid].b += Number(state.allowances[key] || 0);
+           }
+        }
+     });
+     Object.keys(mStats).forEach(function(u) {
+        html += '<tr><td><strong>'+escapeHtml((state.profiles[u]||{}).name||u)+'</strong></td>';
+        [1, 2, 3].forEach(function(cid) {
+           var stat = mStats[u][cid];
+           var color = getTrafficColor(stat.s, stat.b);
+           html += '<td><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:'+color+'; margin-right:8px;"></span>'+money(stat.s)+' / '+money(stat.b)+'</td>';
+        });
+        html += '</tr>';
+     });
+  } else {
+     // MOTHER VIEW: Rows are Categories (Food, Clothing, Household)
+     html += '<tr><th>Main Category</th><th>Allocated Budget</th><th>Expended</th><th>Status</th></tr></thead><tbody>';
+     [1, 2, 3].forEach(function(cid) {
+        var cname = cid === 1 ? 'Food' : (cid === 2 ? 'Clothing' : 'Household');
+        var s = 0;
+        filteredExpenses.forEach(function(e) { if (e.category == cid) s += Number(e.total); });
+        var b = allowance(cid, ds.month !== 'All' ? ds.month : currentMonth(), ds.user !== 'All' ? ds.user : myName);
+        var color = getTrafficColor(s, b);
+        var label = color === '#27ae60' ? 'On Track' : (color === '#f39c12' ? 'Near Limit' : 'Over Budget');
+        html += '<tr><td><strong>'+cname+'</strong></td><td>'+money(b)+'</td><td>'+money(s)+'</td>';
+        html += '<td><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:'+color+'; margin-right:8px;"></span><strong style="color:'+color+'">'+label+'</strong></td></tr>';
+     });
+  }
+  html += '</tbody></table></div></div>';
+  // --- END TRAFFIC LIGHT SYSTEM ---
+
   html += '<div class="grid two-col content-gap">' +
     '<div class="panel"><div class="section-heading"><div><h2>Budget vs Expenditure</h2><small>' + (ds.user === 'All' ? (ds.village === 'All' ? 'Village-wise' : 'Mother-wise') : 'Category-wise') + '</small></div></div><div class="chart-container"><canvas id="dash-bar-chart"></canvas></div></div>' +
     '<div class="panel"><div class="section-heading"><div><h2>Distribution & Outliers</h2><small>Composition of expenses</small></div></div><div class="chart-container"><canvas id="dash-pie-chart"></canvas></div></div></div>';
