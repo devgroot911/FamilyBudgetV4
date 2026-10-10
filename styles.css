@@ -142,3 +142,33 @@ h1, h2 { font-family: inherit; letter-spacing: 0; }
 .help-section{background: var(--panel); color: var(--ink); border-color: var(--line);}
 .help-header{background: var(--panel); color: var(--ink); font-weight:600; padding:15px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
 .help-content{background: var(--paper); color: var(--ink); padding:15px; display:none;}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  --ink: #e8f3e8;
+  --ink-soft: #a0b2ac;
+  --muted: #71827c;
+  --line: #2c423e;
+  --paper: #121c1a;
+  --panel: #1a2a27;
+  --mint: #173b37;
+  --mint-strong: #8ac9a7;
+  --shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] body { background: var(--paper); }
+[data-theme="dark"] .sidebar { background: #0a1110; color: var(--ink); }
+[data-theme="dark"] input, [data-theme="dark"] .field select, [data-theme="dark"] .field textarea { background: #0f1816; color: var(--ink); border-color: var(--line); }
+[data-theme="dark"] table th { background: #0a1110; color: var(--ink); border-bottom-color: var(--line); }
+[data-theme="dark"] table td { border-bottom-color: var(--line); }
+[data-theme="dark"] table tr:hover td { background: #121c1a; }
+[data-theme="dark"] .ghost-button:hover, [data-theme="dark"] .nav-item:hover, [data-theme="dark"] .icon-button:hover { background: rgba(255,255,255,0.05); }
+[data-theme="dark"] .nav-item.active { background: rgba(255,255,255,0.1); }
+[data-theme="dark"] .panel { background: var(--panel); border: 1px solid var(--line); }
+[data-theme="dark"] .table-wrap { border-color: var(--line); }
+[data-theme="dark"] [style*="background:#f8f9fa"], [data-theme="dark"] [style*="background: #f8f9fa"] { background: #1a2a27 !important; border-color: var(--line) !important; color: var(--ink) !important;}
+[data-theme="dark"] [style*="background:#fff"], [data-theme="dark"] [style*="background: #fff"] { background: #0f1816 !important; border-color: var(--line) !important; color: var(--ink) !important; }
+[data-theme="dark"] .expense-catalog-card { background: #1a2a27; border-color: var(--line); color: var(--ink); }
+[data-theme="dark"] .expense-catalog-card:hover { background: #2c423e; }
+[data-theme="dark"] .expense-catalog-card.selected { border-color: var(--mint-strong); background: #173b37; }
+[data-theme="dark"] .stat-card { border: 1px solid var(--line); }
+[data-theme="dark"] h2 { color: var(--ink); }

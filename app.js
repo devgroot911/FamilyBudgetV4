@@ -2859,3 +2859,22 @@ function renderHelp() {
 
   document.querySelector('#view-help').innerHTML = html;
 }
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  var themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    var savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+    themeToggle.addEventListener('click', function() {
+      var currentTheme = document.documentElement.getAttribute('data-theme');
+      var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      if (window.currentView === 'dashboard') renderDashboard();
+    });
+  }
+});
