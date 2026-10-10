@@ -2553,7 +2553,87 @@ function generateExcelReport(username, month) {
     ws2['!margins'] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
     ws2['!views'] = [{showGridLines: false}];
     
-    XLSX.utils.book_append_sheet(wb, ws1, 'Expense Records');
+    
+  // --- Yellow Book Subcategory Sheet (ws3) ---
+  var ws3Data = [];
+  var ws3Merges = [];
+  var ws3Rows = [];
+
+  ws3Data.push([createCell("Yellow Book - Subcategory Expenses", {font: reportTheme.fonts.title})]);
+  ws3Merges.push({s:{r:0,c:0}, e:{r:0,c:2}});
+  ws3Rows.push({hpt:24});
+  
+  ws3Data.push([createCell("Mother: " + (profile.name || username) + " (" + username + ")", {font: reportTheme.fonts.metaLabel})]);
+  ws3Merges.push({s:{r:1,c:0}, e:{r:1,c:2}});
+  ws3Rows.push({hpt:16});
+
+  ws3Data.push([createCell("Month: " + month, {font: reportTheme.fonts.metaLabel})]);
+  ws3Merges.push({s:{r:2,c:0}, e:{r:2,c:2}});
+  ws3Rows.push({hpt:16});
+  
+  ws3Data.push([]); ws3Rows.push({hpt: 12});
+  
+  ws3Data.push([
+    createCell("No.", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll}),
+    createCell("Subcategory", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll}),
+    createCell("Amount (LKR)", {font: reportTheme.fonts.header, fill: {fgColor: {rgb: reportTheme.palette.PRIMARY_DARK}}, border: reportTheme.borders.thinAll, alignment:{horizontal:"right"}})
+  ]);
+  ws3Rows.push({hpt: 20});
+
+  var totalWs3 = 0;
+
+  subcategories.forEach(function(sub) {
+     var subTotal = 0;
+     list.forEach(function(e) {
+        if (e.subcategory === sub.id) subTotal += Number(e.total);
+     });
+     totalWs3 += subTotal;
+     ws3Data.push([
+        createCell(sub.id, {font: reportTheme.fonts.body, border: reportTheme.borders.bottomThin}),
+        createCell(sub.name, {font: reportTheme.fonts.body, border: reportTheme.borders.bottomThin}),
+        createCell(subTotal, {font: reportTheme.fonts.body, border: reportTheme.borders.bottomThin, alignment:{horizontal:"right"}}, 'n', reportTheme.formats.currency)
+     ]);
+     ws3Rows.push({hpt: 18});
+  });
+
+  ws3Data.push([
+     createCell("TOTAL", {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}}),
+     createCell("", {font: reportTheme.fonts.smallB}),
+     createCell(totalWs3, {font: reportTheme.fonts.smallB, alignment:{horizontal:"right"}, border: reportTheme.borders.topDouble, fill: {fgColor: {rgb: reportTheme.palette.TINT}}}, 'n', reportTheme.formats.currency)
+  ]);
+  ws3Merges.push({s:{r: ws3Data.length-1, c:0}, e:{r: ws3Data.length-1, c:1}});
+  ws3Rows.push({hpt: 20});
+
+  ws3Data.push([]); ws3Rows.push({hpt: 30});
+  ws3Data.push([
+     createCell("Mother", {font: reportTheme.fonts.smallB}),
+     createCell("", {font: reportTheme.fonts.smallB}),
+     createCell("Village Nurse / Educator", {font: reportTheme.fonts.smallB})
+  ]);
+  ws3Data.push([
+     createCell("", {border: reportTheme.borders.sigLine}),
+     createCell("", {}),
+     createCell("", {border: reportTheme.borders.sigLine})
+  ]);
+  ws3Data.push([
+     createCell("Date: __________", {font: reportTheme.fonts.smallMuted}),
+     createCell("", {}),
+     createCell("Date: __________", {font: reportTheme.fonts.smallMuted})
+  ]);
+  ws3Rows.push({hpt: 14}, {hpt: 20}, {hpt: 14});
+
+  var ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
+  ws3['!merges'] = ws3Merges;
+  ws3['!rows'] = ws3Rows;
+  ws3['!cols'] = [{wch:6}, {wch:35}, {wch:25}];
+  ws3['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToWidth: 1, fitToHeight: 0 };
+  ws3['!margins'] = { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 };
+  ws3['!views'] = [{showGridLines: false}];
+
+  XLSX.utils.book_append_sheet(wb, ws1, 'Expense Records');
+  // XLSX.utils.book_append_sheet(wb, ws2, 'Summary & Insights'); (already there)
+  XLSX.utils.book_append_sheet(wb, ws3, 'Yellow Book');
+
     XLSX.utils.book_append_sheet(wb, ws2, 'Summary & Insights');
     
     if(!wb.Workbook) wb.Workbook = { Views: [{ activeTab: 1 }] };
