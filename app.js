@@ -587,206 +587,219 @@ function render() {
 
 // ============================================================
 function renderDashboard() {
-  var cm = currentMonth();
+  window.dashboardState = window.dashboardState || { month: currentMonth(), village: 'All', user: 'All', category: 'All' };
+  var ds = window.dashboardState;
+  
+  window.resetDashboardFilters = function() {
+    window.dashboardState = { month: currentMonth(), village: 'All', user: 'All', category: 'All' };
+    renderDashboard();
+  };
+  window.setDashboardFilter = function(field, val) {
+    window.dashboardState[field] = val;
+    if (field === 'village') window.dashboardState.user = 'All';
+    renderDashboard();
+  };
+
   var visibleExpenses = getVisibleExpenses();
   var role = (sessionStorage.getItem('role') || '').toLowerCase();
   var isManager = role.indexOf('admin') !== -1 || role.indexOf('director') !== -1 || role.indexOf('accountant') !== -1 || role.indexOf('assistant') !== -1;
   var isAdminUser = role.indexOf('admin') !== -1;
+  var myName = sessionStorage.getItem('username') || 'mother';
+  var myVillage = state.profiles && state.profiles[myName] ? state.profiles[myName].village : null;
+  var isNational = (role === 'national_director' || role === 'accountant' || role === 'admin' || myVillage === 'All');
 
-  var currentMonthExpenses = visibleExpenses.filter(function(i) { return i.date.indexOf(cm) === 0; });
-  var totalSpent = currentMonthExpenses.reduce(function(s, i) { return s + Number(i.total); }, 0);
-  var totalAllowance = categories.reduce(function(s, c) { return s + allowance(c.id); }, 0);
-  var trueRemaining = categories.reduce(function(s, c) { return s + getFbBalance(c.id); }, 0);
-  var remaining = trueRemaining !== 0 ? trueRemaining : (totalAllowance - totalSpent);
-  var recent = visibleExpenses.slice().sort(function(a, b) { return b.date.localeCompare(a.date); }).slice(0, 10);
-  var todaySpent = visibleExpenses.filter(function(i) { return i.date === today(); }).reduce(function(s, i) { return s + Number(i.total); }, 0);
+  if (!isNational && isManager) ds.village = myVillage;
+  if (!isManager) { ds.village = myVillage; ds.user = myName; }
+
+  var filteredExpenses = visibleExpenses.filter(function(e) {
+    if (ds.month !== 'All' && e.date.indexOf(ds.month) !== 0) return false;
+    if (ds.category !== 'All' && e.category !== ds.category) return false;
+    var eProfile = state.profiles && state.profiles[e.user] ? state.profiles[e.user] : {};
+    var eVillage = eProfile.village || 'Unknown';
+    if (ds.village !== 'All' && eVillage !== ds.village) return false;
+    if (ds.user !== 'All' && e.user !== ds.user) return false;
+    return true;
+  });
+
+  var totalSpent = filteredExpenses.reduce(function(s, e) { return s + Number(e.total); }, 0);
   
-  var html = (isAdminUser ? '<div style="text-align:right;margin-bottom:10px"><button class="primary-button" data-action="refresh-dashboard">&#x21bb; Refresh Data</button></div>' : '');
-
-  if (!isManager) {
-    // --- MOTHER VIEW ---
-    html += '<div class="grid stats-grid">' +
-      '<div class="panel stat-card"><span class="stat-label">Spent this month</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">' + currentMonthExpenses.length + ' entries</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Available balance</span><div class="stat-value">' + money(remaining) + '</div><div class="stat-note">Against current allowances</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Today</span><div class="stat-value">' + money(todaySpent) + '</div><div class="stat-note">' + visibleExpenses.filter(function(i) { return i.date === today(); }).length + ' entries today</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Catalog items</span><div class="stat-value">' + state.items.length + '</div><div class="stat-note">Available for quick entry</div></div>' +
-    '</div>';
-
-    html += '<div class="grid two-col content-gap">' +
-      '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Category Spending</h2><small>Where is your money going?</small></div></div>' +
-        '<div class="chart-container"><canvas id="mother-donut-chart"></canvas></div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Budget Progress</h2><small>' + cm + '</small></div></div>' +
-        categories.map(function(c, i) {
-          var budget = allowance(c.id) || 0;
-          var v = spent(c.id);
-          var pct = budget > 0 ? Math.min((v / budget) * 100, 100) : 0;
-          return '<div class="progress-row"><div class="progress-meta"><span>' + c.name + '</span><span>' + money(v) + ' / ' + money(budget) + '</span></div><div class="progress-track"><div class="progress-fill' + (i === 1 ? ' mint' : i === 2 ? ' blue' : '') + '" style="width:' + pct + '%"></div></div></div>';
-        }).join('') +
-      '</div>' +
-    '</div>';
-
-    html += '<div class="panel content-gap">' +
-      '<div class="section-heading"><div><h2>Daily Spending Trend</h2><small>Cumulative expenses this month</small></div></div>' +
-      '<div class="chart-container"><canvas id="mother-line-chart"></canvas></div>' +
-    '</div>';
+  var totalAllowance = 0;
+  if (ds.user !== 'All') {
+     categories.forEach(function(c) {
+        if (ds.category === 'All' || ds.category === c.id) {
+           totalAllowance += allowance(c.id, ds.month !== 'All' ? ds.month : currentMonth(), ds.user);
+        }
+     });
   } else {
-    // --- MANAGER VIEW ---
-    var usersCount = [...new Set(currentMonthExpenses.map(function(e) { return e.user; }))].length;
-    html += '<div class="grid stats-grid">' +
-      '<div class="panel stat-card"><span class="stat-label">Total Village Spend</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">This month</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Village Allowance</span><div class="stat-value">' + money(totalAllowance) + '</div><div class="stat-note">Total allocated</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Active Mothers</span><div class="stat-value">' + usersCount + '</div><div class="stat-note">Entered data this month</div></div>' +
-      '<div class="panel stat-card"><span class="stat-label">Total Entries</span><div class="stat-value">' + currentMonthExpenses.length + '</div><div class="stat-note">This month</div></div>' +
-    '</div>';
-
-    html += '<div class="grid two-col content-gap">' +
-      '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Mother Comparison</h2><small>Spend by user</small></div></div>' +
-        '<div class="chart-container"><canvas id="manager-bar-chart"></canvas></div>' +
-      '</div>' +
-      '<div class="panel">' +
-        '<div class="section-heading"><div><h2>Category Breakdown</h2><small>Village-wide category spend</small></div></div>' +
-        '<div class="chart-container"><canvas id="manager-pie-chart"></canvas></div>' +
-      '</div>' +
-    '</div>';
-
-    html += '<div class="panel content-gap">' +
-      '<div class="section-heading"><div><h2>Village Spending Trend</h2><small>Cumulative vs Allowance</small></div></div>' +
-      '<div class="chart-container"><canvas id="manager-line-chart"></canvas></div>' +
-    '</div>';
+     Object.keys(state.allowances || {}).forEach(function(key) {
+        if(key.indexOf('_9999') !== -1) return;
+        var parts = key.split('_');
+        var m = parts[parts.length - 2];
+        var u = parts.slice(0, parts.length - 2).join('_');
+        var cid = parts[parts.length - 1];
+        if (ds.month === 'All' || m === ds.month) {
+           if (ds.user === 'All' || u === ds.user) {
+              if (ds.category === 'All' || cid === ds.category) {
+                 var p = state.profiles[u] || {};
+                 if (ds.village === 'All' || p.village === ds.village) {
+                    totalAllowance += Number(state.allowances[key] || 0);
+                 }
+              }
+           }
+        }
+     });
+  }
+  
+  var activeMothersCount = [...new Set(filteredExpenses.map(function(e) { return e.user; }))].length;
+  var outliers = filteredExpenses.slice().sort(function(a,b) { return b.total - a.total; }).slice(0, 3);
+  
+  var html = '<div class="panel content-gap" style="background:#f8f9fa; border:1px solid #e0e0e0; padding:15px;">';
+  html += '<div class="section-heading" style="margin-bottom:10px;"><div><h2 style="font-size:16px; margin:0;">Operational Dashboard Filters</h2></div></div>';
+  html += '<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items:end;">';
+  
+  html += '<div><label style="font-size:12px;">Month</label><input type="month" class="form-control" value="'+(ds.month!=='All'?ds.month:'')+'" onchange="setDashboardFilter(\'month\', this.value || \'All\')"></div>';
+  
+  if (isNational) {
+     var vSet = new Set();
+     Object.keys(state.profiles || {}).forEach(function(u) { if (state.profiles[u].village && state.profiles[u].village !== 'All') vSet.add(state.profiles[u].village); });
+     html += '<div><label style="font-size:12px;">Village</label><select class="form-control" onchange="setDashboardFilter(\'village\', this.value)"><option value="All">All Villages</option>';
+     Array.from(vSet).sort().forEach(function(v) { html += '<option value="'+escapeHtml(v)+'" '+(ds.village===v?'selected':'')+'>'+escapeHtml(v)+'</option>'; });
+     html += '</select></div>';
   }
 
-  // Recent activity table (for both)
-  html += '<div class="panel content-gap">' +
-    '<div class="section-heading"><div><h2>Recent Activity</h2><small>Latest saved entries</small></div>' + (!isManager ? '<button class="primary-button" data-view="expenses">+ Add expense</button>' : '') + '</div>' +
-    '<div class="table-wrap"><table><thead><tr><th>Item</th><th>Category</th><th>User</th><th>Date</th><th>Qty</th><th>Amount</th><th></th></tr></thead><tbody>' +
-    (recent.length ? recent.map(function(e) {
-      return '<tr><td><strong>' + escapeHtml(e.name) + '</strong>' + getTranslationsHtml(e.name) + '<br><span class="muted">' + subcat(e.subcategory) + '</span></td><td><span class="category-dot ' + cat(e.category).color + '"></span>' + cat(e.category).name + '</td><td>' + escapeHtml(e.user || 'Unknown') + '</td><td>' + e.date + '</td><td>' + e.quantity + '</td><td class="amount">' + money(e.total) + '</td><td>' + (isManager ? '<button class="ghost-button" data-edit-expense="' + e.id + '">Edit</button> ' : '') + '<button class="ghost-button" data-delete-expense="' + e.id + '">Delete</button></td></tr>';
-    }).join('') : '<tr><td colspan="7" class="empty">No expense entries yet.</td></tr>') +
-    '</tbody></table></div>' +
-  '</div>';
+  if (isManager) {
+     html += '<div><label style="font-size:12px;">Mother</label><select class="form-control" onchange="setDashboardFilter(\'user\', this.value)"><option value="All">All Mothers</option>';
+     Object.keys(state.profiles || {}).forEach(function(u) {
+        var p = state.profiles[u];
+        if (p.role === 'mother' && (ds.village === 'All' || p.village === ds.village)) {
+           html += '<option value="'+escapeHtml(u)+'" '+(ds.user===u?'selected':'')+'>'+escapeHtml(p.name || u)+' ('+escapeHtml(u)+')</option>';
+        }
+     });
+     html += '</select></div>';
+  }
+
+  html += '<div><label style="font-size:12px;">Category</label><select class="form-control" onchange="setDashboardFilter(\'category\', this.value)"><option value="All">All Categories</option>';
+  categories.forEach(function(c) { html += '<option value="'+escapeHtml(c.id)+'" '+(ds.category===c.id?'selected':'')+'>'+escapeHtml(c.name)+'</option>'; });
+  html += '</select></div>';
+  html += '<div><button class="ghost-button" onclick="resetDashboardFilters()" style="padding:8px 12px; margin:0;">Reset Filters</button></div></div></div>';
+
+  html += '<div class="grid stats-grid content-gap">' +
+    '<div class="panel stat-card"><span class="stat-label">Total Spent</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">Matching filters</div></div>' +
+    '<div class="panel stat-card"><span class="stat-label">Total Allocated</span><div class="stat-value">' + money(totalAllowance) + '</div><div class="stat-note">Matching filters</div></div>' +
+    '<div class="panel stat-card"><span class="stat-label">Active Users</span><div class="stat-value">' + activeMothersCount + '</div><div class="stat-note">With expenses</div></div>' +
+    '<div class="panel stat-card"><span class="stat-label">Total Entries</span><div class="stat-value">' + filteredExpenses.length + '</div><div class="stat-note">Matching filters</div></div></div>';
+
+  html += '<div class="grid two-col content-gap">' +
+    '<div class="panel"><div class="section-heading"><div><h2>Spending Distribution</h2><small>By Category/Subcategory</small></div></div><div class="chart-container"><canvas id="dash-pie-chart"></canvas></div></div>' +
+    '<div class="panel"><div class="section-heading"><div><h2>Comparison View</h2><small>' + (ds.user === 'All' ? 'By Mother/Village' : 'By Subcategory') + '</small></div></div><div class="chart-container"><canvas id="dash-bar-chart"></canvas></div></div></div>';
+
+  html += '<div class="grid two-col content-gap">' +
+    '<div class="panel"><div class="section-heading"><div><h2>Top Outlier Expenses</h2><small>Highest individual transactions</small></div></div><div class="table-wrap"><table><tbody>';
+    if (outliers.length) {
+      outliers.forEach(function(o) { html += '<tr><td><strong>'+escapeHtml(o.name)+'</strong><br><span class="muted">'+escapeHtml(o.user)+' | '+o.date+'</span></td><td class="amount" style="color:#c0392b; font-weight:bold;">'+money(o.total)+'</td></tr>'; });
+    } else { html += '<tr><td class="empty">No expenses found</td></tr>'; }
+  html += '</tbody></table></div></div>' +
+    '<div class="panel"><div class="section-heading"><div><h2>Cumulative Trend</h2><small>Spending pace over time</small></div></div><div class="chart-container"><canvas id="dash-line-chart"></canvas></div></div></div>';
+
+  html += '<div class="panel content-gap"><div class="section-heading"><div><h2>Filtered Activity</h2><small>Read-only view</small></div></div>' +
+    '<div class="table-wrap" style="max-height: 400px; overflow-y: auto;"><table><thead><tr><th>Item</th><th>Category</th><th>User</th><th>Date</th><th>Qty</th><th>Amount</th></tr></thead><tbody>' +
+    (filteredExpenses.length ? filteredExpenses.sort(function(a,b){return b.date.localeCompare(a.date)}).map(function(e) {
+      return '<tr><td><strong>' + escapeHtml(e.name) + '</strong><br><span class="muted">' + subcat(e.subcategory) + '</span></td><td><span class="category-dot ' + cat(e.category).color + '"></span>' + cat(e.category).name + '</td><td>' + escapeHtml(e.user || 'Unknown') + '</td><td>' + e.date + '</td><td>' + e.quantity + '</td><td class="amount">' + money(e.total) + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="empty">No expense entries match your filters.</td></tr>') +
+    '</tbody></table></div></div>';
 
   document.querySelector('#view-dashboard').innerHTML = html;
-
-  // Render Charts after DOM injection
-  if (window.Chart) renderCharts(isManager, currentMonthExpenses, totalAllowance);
+  if (window.Chart) renderDashboardCharts(filteredExpenses, totalAllowance, ds);
 }
-
-// Global chart instances to destroy before re-rendering
 var chartInstances = [];
 
-function renderCharts(isManager, cmExpenses, totalAllowance) {
-  // Clean up old charts
+function renderDashboardCharts(filteredExpenses, totalAllowance, ds) {
   chartInstances.forEach(function(c) { c.destroy(); });
   chartInstances = [];
 
-  var categoryTotals = {};
-  categories.forEach(function(c) { categoryTotals[c.name] = 0; });
-  cmExpenses.forEach(function(e) { 
-    var cName = cat(e.category).name;
-    categoryTotals[cName] = (categoryTotals[cName] || 0) + Number(e.total);
-  });
-
-  var daysInMonth = 31;
-  var dailyTotals = Array(daysInMonth).fill(0);
-  cmExpenses.forEach(function(e) {
-    var day = parseInt(e.date.split('-')[2], 10);
-    if (!isNaN(day) && day >= 1 && day <= 31) dailyTotals[day - 1] += Number(e.total);
-  });
-  var cumulative = [];
-  var currentSum = 0;
-  for (var i = 0; i < daysInMonth; i++) {
-    currentSum += dailyTotals[i];
-    cumulative.push(currentSum);
+  var ctxPie = document.getElementById('dash-pie-chart');
+  if (ctxPie) {
+    var pieTotals = {};
+    if (ds.category === 'All') {
+      categories.forEach(function(c) { pieTotals[c.name] = 0; });
+      filteredExpenses.forEach(function(e) {
+        var cName = cat(e.category).name;
+        pieTotals[cName] = (pieTotals[cName] || 0) + Number(e.total);
+      });
+    } else {
+      filteredExpenses.forEach(function(e) {
+        var scName = subcat(e.subcategory);
+        pieTotals[scName] = (pieTotals[scName] || 0) + Number(e.total);
+      });
+    }
+    chartInstances.push(new Chart(ctxPie, {
+      type: 'doughnut',
+      data: { labels: Object.keys(pieTotals), datasets: [{ data: Object.values(pieTotals), backgroundColor: ['#173b37', '#2eb886', '#0070f3', '#f39c12', '#9b59b6', '#e74c3c'] }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    }));
   }
-  var labelsDays = Array.from({length: 31}, function(_, i) { return (i + 1).toString(); });
 
-  var commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
-
-  if (!isManager) {
-    var ctxDonut = document.getElementById('mother-donut-chart');
-    if (ctxDonut) {
-      chartInstances.push(new Chart(ctxDonut, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(categoryTotals),
-          datasets: [{ data: Object.values(categoryTotals), backgroundColor: ['#173b37', '#2eb886', '#0070f3'] }]
-        },
-        options: commonOptions
-      }));
+  var ctxBar = document.getElementById('dash-bar-chart');
+  if (ctxBar) {
+    var barTotals = {};
+    if (ds.user === 'All') {
+      filteredExpenses.forEach(function(e) {
+        var p = state.profiles[e.user] || {};
+        var label = ds.village === 'All' ? (p.village || 'Unknown') : (p.name || e.user);
+        barTotals[label] = (barTotals[label] || 0) + Number(e.total);
+      });
+    } else {
+      categories.forEach(function(c) { barTotals[c.name] = 0; });
+      filteredExpenses.forEach(function(e) {
+        var cName = cat(e.category).name;
+        barTotals[cName] = (barTotals[cName] || 0) + Number(e.total);
+      });
     }
     
-    var ctxLine = document.getElementById('mother-line-chart');
-    if (ctxLine) {
-      chartInstances.push(new Chart(ctxLine, {
-        type: 'line',
-        data: {
-          labels: labelsDays,
-          datasets: [{
-            label: 'Cumulative Spend (LKR)',
-            data: cumulative,
-            borderColor: '#2eb886',
-            backgroundColor: 'rgba(46, 184, 134, 0.1)',
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-      }));
-    }
-  } else {
-    var ctxPie = document.getElementById('manager-pie-chart');
-    if (ctxPie) {
-      chartInstances.push(new Chart(ctxPie, {
-        type: 'pie',
-        data: {
-          labels: Object.keys(categoryTotals),
-          datasets: [{ data: Object.values(categoryTotals), backgroundColor: ['#173b37', '#2eb886', '#0070f3'] }]
-        },
-        options: commonOptions
-      }));
-    }
+    var sortedKeys = Object.keys(barTotals).sort(function(a,b) { return barTotals[b] - barTotals[a]; });
+    var sortedVals = sortedKeys.map(function(k) { return barTotals[k]; });
 
-    var userTotals = {};
-    cmExpenses.forEach(function(e) {
-      var u = e.user || 'Unknown';
-      userTotals[u] = (userTotals[u] || 0) + Number(e.total);
+    chartInstances.push(new Chart(ctxBar, {
+      type: 'bar',
+      data: { labels: sortedKeys, datasets: [{ label: 'Total Spend (LKR)', data: sortedVals, backgroundColor: '#173b37' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    }));
+  }
+
+  var ctxLine = document.getElementById('dash-line-chart');
+  if (ctxLine) {
+    var daysInMonth = 31;
+    var dailyTotals = Array(daysInMonth).fill(0);
+    filteredExpenses.forEach(function(e) {
+      var day = parseInt(e.date.split('-')[2], 10);
+      if (!isNaN(day) && day >= 1 && day <= 31) dailyTotals[day - 1] += Number(e.total);
     });
+    var cumulative = [];
+    var currentSum = 0;
+    for (var i = 0; i < daysInMonth; i++) {
+      currentSum += dailyTotals[i];
+      cumulative.push(currentSum);
+    }
+    var labelsDays = Array.from({length: 31}, function(_, i) { return (i + 1).toString(); });
+
+    var datasets = [{
+      label: 'Cumulative Spend (LKR)', data: cumulative, borderColor: '#2eb886', backgroundColor: 'rgba(46, 184, 134, 0.1)', fill: true, tension: 0.3
+    }];
     
-    var ctxBar = document.getElementById('manager-bar-chart');
-    if (ctxBar) {
-      chartInstances.push(new Chart(ctxBar, {
-        type: 'bar',
-        data: {
-          labels: Object.keys(userTotals),
-          datasets: [{ label: 'Total Spend (LKR)', data: Object.values(userTotals), backgroundColor: '#173b37' }]
-        },
-        options: commonOptions
-      }));
+    if (totalAllowance > 0) {
+      var paceLine = Array(daysInMonth).fill(0).map(function(_, i) { return (totalAllowance / daysInMonth) * (i + 1); });
+      datasets.push({ label: 'Target Pace', data: paceLine, borderColor: '#e74c3c', borderDash: [5, 5], fill: false, pointRadius: 0 });
     }
 
-    var ctxLine2 = document.getElementById('manager-line-chart');
-    if (ctxLine2) {
-      chartInstances.push(new Chart(ctxLine2, {
-        type: 'line',
-        data: {
-          labels: labelsDays,
-          datasets: [
-            { label: 'Cumulative Village Spend', data: cumulative, borderColor: '#173b37', tension: 0.3 },
-            { label: 'Village Allowance', data: Array(31).fill(totalAllowance), borderColor: '#e0e0e0', borderDash: [5, 5], pointRadius: 0 }
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-      }));
-    }
+    chartInstances.push(new Chart(ctxLine, {
+      type: 'line',
+      data: { labels: labelsDays, datasets: datasets },
+      options: { responsive: true, maintainAspectRatio: false }
+    }));
   }
 }
 
-  // ============================================================
-// ============================================================
+
 function enhanceExpenseForm() {
   var form = document.querySelector('#expense-form');
   if (!form || document.querySelector('#expense-catalog-grid')) return; // already enhanced
