@@ -76,13 +76,23 @@ var categories = [
   { id: 3, name: 'Clothing', color: 'clothing' }
 ];
 var subcategories = [
-  { id: 1, name: 'Animal protein' }, { id: 2, name: 'Grains' }, { id: 3, name: 'Vegetables' },
-  { id: 4, name: 'Fruits' }, { id: 5, name: 'Dairy & milk' }, { id: 6, name: 'Spices & condiments' },
-  { id: 7, name: 'Oils & fats' }, { id: 8, name: 'Pulses & legumes' }, { id: 9, name: 'Bakery & bread' },
-  { id: 10, name: 'Beverages & tea' }, { id: 11, name: 'Snacks & sweets' }, { id: 12, name: 'Prepared meals' },
-  { id: 13, name: 'Other food items' }, { id: 14, name: 'Household & cleaning' },
-  { id: 15, name: 'Personal care & hygiene' }, { id: 16, name: 'Clothing & footwear' },
-  { id: 17, name: 'Miscellaneous & others' }
+  { id: 1, name: 'Animal Proteins' },
+  { id: 2, name: 'Roots & Tubers' },
+  { id: 3, name: 'Dairy' },
+  { id: 4, name: 'Cereals & Staples' },
+  { id: 5, name: 'Pulses & Legumes' },
+  { id: 6, name: 'Vegetables & Greens' },
+  { id: 7, name: 'Fruits' },
+  { id: 8, name: 'Sweets & Snacks' },
+  { id: 9, name: 'Spices & Condiments' },
+  { id: 10, name: 'Fats & Oils' },
+  { id: 11, name: 'Nuts & Coconut' },
+  { id: 12, name: 'Beverages' },
+  { id: 13, name: 'Fuel & Utilities' },
+  { id: 14, name: 'Education' },
+  { id: 15, name: 'WASH & Personal Care' },
+  { id: 16, name: 'Clothing & Footwear' },
+  { id: 17, name: 'Other Household' }
 ];
 
 // --- Utility Functions ---
