@@ -715,18 +715,18 @@ function renderDashboard() {
   html += '<button class="primary-button" onclick="exportDashboardToExcel()" style="padding:6px 12px; margin:0; font-size:12px; background:#27ae60;">Export to Excel</button></div></div>';
   
   html += '<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items:end;">';
-  html += '<div><label style="font-size:12px; font-weight:bold;">Reporting Period</label><input type="month" class="form-control" value="'+(ds.month!=='All'?ds.month:'')+'" onchange="setDashboardFilter(\'month\', this.value || \'All\')"></div>';
+  html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Reporting Period</label><input type="month" style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" value="'+(ds.month!=='All'?ds.month:'')+'" onchange="setDashboardFilter(\'month\', this.value || \'All\')"></div>';
   
   if (isNational) {
      var vSet = new Set();
      Object.keys(state.profiles || {}).forEach(function(u) { if (state.profiles[u].village && state.profiles[u].village !== 'All') vSet.add(state.profiles[u].village); });
-     html += '<div><label style="font-size:12px; font-weight:bold;">Region / Village</label><select class="form-control" onchange="setDashboardFilter(\'village\', this.value)"><option value="All">All Regions</option>';
+     html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Region / Village</label><select style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" onchange="setDashboardFilter(\'village\', this.value)"><option value="All">All Regions</option>';
      Array.from(vSet).sort().forEach(function(v) { html += '<option value="'+escapeHtml(v)+'" '+(ds.village===v?'selected':'')+'>'+escapeHtml(v)+'</option>'; });
      html += '</select></div>';
   }
 
   if (isManager) {
-     html += '<div><label style="font-size:12px; font-weight:bold;">Assigned Mother</label><select class="form-control" onchange="setDashboardFilter(\'user\', this.value)"><option value="All">All Mothers</option>';
+     html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Assigned Mother</label><select style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" onchange="setDashboardFilter(\'user\', this.value)"><option value="All">All Mothers</option>';
      Object.keys(state.profiles || {}).forEach(function(u) {
         var p = state.profiles[u];
         if (p.role === 'mother' && (ds.village === 'All' || p.village === ds.village)) {
@@ -736,7 +736,7 @@ function renderDashboard() {
      html += '</select></div>';
   }
 
-  html += '<div><label style="font-size:12px; font-weight:bold;">Expense Category</label><select class="form-control" onchange="setDashboardFilter(\'category\', this.value)"><option value="All">All Categories</option>';
+  html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Expense Category</label><select style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" onchange="setDashboardFilter(\'category\', this.value)"><option value="All">All Categories</option>';
   categories.forEach(function(c) { html += '<option value="'+escapeHtml(c.id)+'" '+(ds.category===c.id?'selected':'')+'>'+escapeHtml(c.name)+'</option>'; });
   html += '</select></div></div></div>';
 
