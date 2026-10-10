@@ -678,7 +678,36 @@ function renderDashboard() {
   }
   
   var activeMothersCount = [...new Set(filteredExpenses.map(function(e) { return e.user; }))].length;
-  var outliers = filteredExpenses.slice().sort(function(a,b) { return b.total - a.total; }).slice(0, 5);
+  
+  var itemStats = {};
+  filteredExpenses.forEach(function(e) {
+     if (!e.quantity || e.quantity <= 0) return;
+     var unitPrice = Number(e.total) / Number(e.quantity);
+     if (!itemStats[e.name]) itemStats[e.name] = { sum: 0, count: 0 };
+     itemStats[e.name].sum += unitPrice;
+     itemStats[e.name].count++;
+  });
+  Object.keys(itemStats).forEach(function(k) { itemStats[k].mean = itemStats[k].sum / itemStats[k].count; });
+
+  var advancedOutliers = [];
+  filteredExpenses.forEach(function(e) {
+     if (!e.quantity || e.quantity <= 0) return;
+     var unitPrice = Number(e.total) / Number(e.quantity);
+     var stats = itemStats[e.name];
+     // Anomaly if unit price is > 30% higher than average and there's a baseline
+     if (stats.count >= 2 && unitPrice > (stats.mean * 1.3)) {
+        var pct = ((unitPrice - stats.mean) / stats.mean) * 100;
+        advancedOutliers.push({
+           expense: e,
+           unitPrice: unitPrice,
+           mean: stats.mean,
+           pctOver: pct
+        });
+     }
+  });
+  advancedOutliers.sort(function(a, b) { return b.pctOver - a.pctOver; });
+  var topOutliers = advancedOutliers.slice(0, 5);
+
   
   var html = '<div class="panel content-gap" style="background:#f8f9fa; border:1px solid #e0e0e0; padding:15px; border-left: 4px solid #f39c12;">';
   html += '<div class="section-heading" style="margin-bottom:10px;"><div><h2 style="font-size:18px; margin:0; color:#2c3e50;">PowerBI Analytics Hub</h2></div>';
@@ -726,10 +755,13 @@ function renderDashboard() {
     '<div class="panel"><div class="section-heading"><div><h2>Distribution & Outliers</h2><small>Composition of expenses</small></div></div><div class="chart-container"><canvas id="dash-pie-chart"></canvas></div></div></div>';
 
   html += '<div class="grid two-col content-gap">' +
-    '<div class="panel"><div class="section-heading"><div><h2>Top 5 High-Value Outliers</h2><small>Individual transactions requiring attention</small></div></div><div class="table-wrap"><table><tbody>';
-    if (outliers.length) {
-      outliers.forEach(function(o) { html += '<tr><td><strong>'+escapeHtml(o.name)+'</strong><br><span class="muted">'+escapeHtml((state.profiles[o.user]||{}).name||o.user)+' | '+o.date+'</span></td><td class="amount" style="color:#c0392b; font-weight:bold;">'+money(o.total)+'</td></tr>'; });
-    } else { html += '<tr><td class="empty">No expenses found</td></tr>'; }
+    '<div class="panel"><div class="section-heading"><div><h2>Price Anomalies (Outliers)</h2><small>Items bought above average unit price</small></div></div><div class="table-wrap"><table><tbody>';
+    if (topOutliers.length) {
+      topOutliers.forEach(function(o) { 
+         var e = o.expense;
+         html += '<tr><td><strong>'+escapeHtml(e.name)+'</strong><br><span class="muted">'+escapeHtml((state.profiles[e.user]||{}).name||e.user)+' | '+e.date+'</span></td><td class="amount" style="color:#c0392b; font-weight:bold;">'+money(o.unitPrice)+' / '+escapeHtml(e.unit || 'qty')+'<br><span style="font-size:10px; color:#7f8c8d;">Avg: '+money(o.mean)+'</span></td></tr>'; 
+      });
+    } else { html += '<tr><td class="empty" style="color:#27ae60;">No price anomalies detected!</td></tr>'; }
   html += '</tbody></table></div></div>' +
     '<div class="panel"><div class="section-heading"><div><h2>Velocity & Trending</h2><small>Cumulative burn rate</small></div></div><div class="chart-container"><canvas id="dash-line-chart"></canvas></div></div></div>';
 
