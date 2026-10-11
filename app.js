@@ -573,7 +573,11 @@ function render() {
 
   // Active nav tab
   document.querySelectorAll('.nav-item').forEach(function(btn) {
-    btn.classList.toggle('active', btn.getAttribute('data-view') === activeView);
+    var isActive = btn.getAttribute('data-view') === activeView;
+    btn.classList.toggle('active', isActive);
+    if (isActive && window.innerWidth <= 600) {
+      try { btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch (e) {}
+    }
   });
 
   // Switch view sections
