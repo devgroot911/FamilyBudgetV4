@@ -656,37 +656,77 @@ function renderDashboard() {
 
   var totalSpent = filteredExpenses.reduce(function(s, e) { return s + Number(e.total); }, 0);
   
-  // Advanced grouped budgets
+  // --- ACCURATE BUDGET ALLOCATION FROM FB_ALLOCATIONS ---
   var groupBudgets = {};
   var totalAllowance = 0;
   
+  var targetMonth = ds.month !== 'All' ? ds.month : currentMonth();
+  var yr = parseInt(targetMonth.split('-')[0], 10);
+  var mo = parseInt(targetMonth.split('-')[1], 10);
+
+  // Filter valid fbAllocations for the chosen year and month
+  var fbRows = (window.appState && window.appState.fbAllocations ? window.appState.fbAllocations : []).filter(function(r) {
+     return r.year === yr && r.month === mo && r.calcs;
+  });
+
+  // Helper to extract category budget from an fbAllocation row
+  function getRowCatBudget(r, catId) {
+     if (!r || !r.calcs) return 0;
+     if (catId === 1) return Number(r.calcs.total_food || 0);
+     if (catId === 2) return Number(r.calcs.total_hh || 0);
+     if (catId === 3) return Number(r.calcs.total_clothing || 0);
+     return 0;
+  }
+
+  // Helper to get total budget across all 3 categories (or selected category)
+  function getRowFilteredBudget(r, selCat) {
+     if (selCat === 'All') {
+        return getRowCatBudget(r, 1) + getRowCatBudget(r, 2) + getRowCatBudget(r, 3);
+     }
+     var cNum = parseInt(selCat, 10);
+     return getRowCatBudget(r, cNum);
+  }
+
+  // Map each mother username to profile
+  var userHouseMap = {};
+  Object.keys(state.profiles || {}).forEach(function(u) {
+     var p = state.profiles[u];
+     if (p && p.village && p.house) {
+        userHouseMap[p.village + '_' + String(p.house)] = p;
+     }
+  });
+
   if (ds.user !== 'All') {
+     // Single Mother scope
+     var targetProfile = state.profiles && state.profiles[ds.user] ? state.profiles[ds.user] : {};
+     var targetH = String(targetProfile.house || '');
+     var targetV = targetProfile.village || '';
+
+     var matchedRow = fbRows.find(function(r) {
+        return r.village === targetV && String(r.house_no) === targetH;
+     });
+
      categories.forEach(function(c) {
         if (ds.category === 'All' || ds.category === c.id) {
-           var a = allowance(c.id, ds.month !== 'All' ? ds.month : currentMonth(), ds.user);
-           totalAllowance += a;
-           groupBudgets[c.name] = (groupBudgets[c.name] || 0) + a;
+           var catB = matchedRow ? getRowCatBudget(matchedRow, c.id) : 0;
+           totalAllowance += catB;
+           groupBudgets[c.name] = (groupBudgets[c.name] || 0) + catB;
         }
      });
   } else {
-     Object.keys(state.allowances || {}).forEach(function(key) {
-        if(key.indexOf('_9999') !== -1) return;
-        var parts = key.split('_');
-        var m = parts[parts.length - 2];
-        var u = parts.slice(0, parts.length - 2).join('_');
-        var cid = parts[parts.length - 1];
-        if (ds.month === 'All' || m === ds.month) {
-           if (ds.user === 'All' || u === ds.user) {
-              if (ds.category === 'All' || cid === ds.category) {
-                 var p = state.profiles[u] || {};
-                 if (ds.village === 'All' || p.village === ds.village) {
-                    var amt = Number(state.allowances[key] || 0);
-                    totalAllowance += amt;
-                    var label = ds.village === 'All' ? (p.village || 'Unknown') : (p.name || u);
-                    groupBudgets[label] = (groupBudgets[label] || 0) + amt;
-                 }
-              }
-           }
+     // Multiple users (National or Village scope)
+     fbRows.forEach(function(r) {
+        if (ds.village !== 'All' && r.village !== ds.village) return;
+        
+        var prof = userHouseMap[r.village + '_' + String(r.house_no)];
+        var rowAmt = getRowFilteredBudget(r, ds.category);
+        totalAllowance += rowAmt;
+
+        if (ds.village === 'All') {
+           groupBudgets[r.village] = (groupBudgets[r.village] || 0) + rowAmt;
+        } else {
+           var motherLabel = prof ? (prof.name || prof.username || ('House ' + r.house_no)) : ('House ' + r.house_no);
+           groupBudgets[motherLabel] = (groupBudgets[motherLabel] || 0) + rowAmt;
         }
      });
   }
@@ -779,25 +819,31 @@ function renderDashboard() {
   
   if (isNational && ds.village === 'All') {
      // NATIONAL VIEW: Rows are Villages
-     html += '<tr><th>Village</th><th>Food Status</th><th>Clothing Status</th><th>Household Status</th></tr></thead><tbody>';
+     html += '<tr><th>Village</th><th>Food Status</th><th>Household Status</th><th>Clothing Status</th></tr></thead><tbody>';
      var vStats = {};
-     // Populate vStats
+     
+     // Initialize all villages from profiles
+     Object.keys(state.profiles || {}).forEach(function(u) {
+        var v = state.profiles[u].village;
+        if (v && v !== 'All') {
+           if (!vStats[v]) vStats[v] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
+        }
+     });
+
+     // Populate spends
      filteredExpenses.forEach(function(e) {
         var v = (state.profiles[e.user] || {}).village || 'Unknown';
         if (!vStats[v]) vStats[v] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
         if (e.category >= 1 && e.category <= 3) vStats[v][e.category].s += Number(e.total);
      });
-     // Budgets
-     Object.keys(state.allowances || {}).forEach(function(key) {
-        if(key.indexOf('_9999') !== -1) return;
-        var parts = key.split('_');
-        var u = parts.slice(0, parts.length - 2).join('_');
-        var cid = parseInt(parts[parts.length - 1], 10);
-        if (cid >= 1 && cid <= 3) {
-           var v = (state.profiles[u] || {}).village || 'Unknown';
-           if (!vStats[v]) vStats[v] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
-           vStats[v][cid].b += Number(state.allowances[key] || 0);
-        }
+
+     // Populate budgets from fbRows
+     fbRows.forEach(function(r) {
+        var v = r.village;
+        if (!vStats[v]) vStats[v] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
+        vStats[v][1].b += getRowCatBudget(r, 1);
+        vStats[v][2].b += getRowCatBudget(r, 2);
+        vStats[v][3].b += getRowCatBudget(r, 3);
      });
      
      Object.keys(vStats).sort().forEach(function(v) {
@@ -810,30 +856,40 @@ function renderDashboard() {
         html += '</tr>';
      });
   } else if (isManager && ds.user === 'All') {
-     // VILLAGE VIEW: Rows are Mothers
-     html += '<tr><th>Household (Mother)</th><th>Food Status</th><th>Clothing Status</th><th>Household Status</th></tr></thead><tbody>';
+     // VILLAGE VIEW: Rows are Mothers in the selected village
+     html += '<tr><th>Household (Mother)</th><th>Food Status</th><th>Household Status</th><th>Clothing Status</th></tr></thead><tbody>';
      var mStats = {};
-     filteredExpenses.forEach(function(e) {
-        var u = e.user;
-        if (!mStats[u]) mStats[u] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
-        if (e.category >= 1 && e.category <= 3) mStats[u][e.category].s += Number(e.total);
-     });
-     // Budgets
-     Object.keys(state.allowances || {}).forEach(function(key) {
-        if(key.indexOf('_9999') !== -1) return;
-        var parts = key.split('_');
-        var u = parts.slice(0, parts.length - 2).join('_');
-        var cid = parseInt(parts[parts.length - 1], 10);
-        if (cid >= 1 && cid <= 3) {
-           var p = state.profiles[u] || {};
-           if (p.village === ds.village) {
-              if (!mStats[u]) mStats[u] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0} };
-              mStats[u][cid].b += Number(state.allowances[key] || 0);
-           }
+
+     // Initialize all mothers in ds.village
+     Object.keys(state.profiles || {}).forEach(function(u) {
+        var p = state.profiles[u];
+        if (p.role === 'mother' && (ds.village === 'All' || p.village === ds.village)) {
+           mStats[u] = { 1: {s:0, b:0}, 2: {s:0, b:0}, 3: {s:0, b:0}, profile: p };
         }
      });
+
+     filteredExpenses.forEach(function(e) {
+        var u = e.user;
+        if (mStats[u] && e.category >= 1 && e.category <= 3) {
+           mStats[u][e.category].s += Number(e.total);
+        }
+     });
+
+     // Populate budgets from fbRows for mothers in ds.village
+     fbRows.forEach(function(r) {
+        if (ds.village !== 'All' && r.village !== ds.village) return;
+        var prof = userHouseMap[r.village + '_' + String(r.house_no)];
+        if (prof && prof.username && mStats[prof.username]) {
+           mStats[prof.username][1].b += getRowCatBudget(r, 1);
+           mStats[prof.username][2].b += getRowCatBudget(r, 2);
+           mStats[prof.username][3].b += getRowCatBudget(r, 3);
+        }
+     });
+
      Object.keys(mStats).forEach(function(u) {
-        html += '<tr><td><strong>'+escapeHtml((state.profiles[u]||{}).name||u)+'</strong></td>';
+        var p = mStats[u].profile || {};
+        var label = p.name ? (p.name + ' (' + u + ')') : u;
+        html += '<tr><td><strong>'+escapeHtml(label)+'</strong></td>';
         [1, 2, 3].forEach(function(cid) {
            var stat = mStats[u][cid];
            var color = getTrafficColor(stat.s, stat.b);
@@ -842,13 +898,21 @@ function renderDashboard() {
         html += '</tr>';
      });
   } else {
-     // MOTHER VIEW: Rows are Categories (Food, Clothing, Household)
+     // MOTHER VIEW: Rows are Categories (Food, Household, Clothing)
      html += '<tr><th>Main Category</th><th>Allocated Budget</th><th>Expended</th><th>Status</th></tr></thead><tbody>';
+     var targetUser = ds.user !== 'All' ? ds.user : myName;
+     var p = state.profiles && state.profiles[targetUser] ? state.profiles[targetUser] : {};
+     var targetH = String(p.house || '');
+     var targetV = p.village || '';
+     var matchedRow = fbRows.find(function(r) {
+        return r.village === targetV && String(r.house_no) === targetH;
+     });
+
      [1, 2, 3].forEach(function(cid) {
-        var cname = cid === 1 ? 'Food' : (cid === 2 ? 'Clothing' : 'Household');
+        var cname = cid === 1 ? 'Food' : (cid === 2 ? 'Household' : 'Clothing');
         var s = 0;
         filteredExpenses.forEach(function(e) { if (e.category == cid) s += Number(e.total); });
-        var b = allowance(cid, ds.month !== 'All' ? ds.month : currentMonth(), ds.user !== 'All' ? ds.user : myName);
+        var b = matchedRow ? getRowCatBudget(matchedRow, cid) : 0;
         var color = getTrafficColor(s, b);
         var label = color === '#27ae60' ? 'On Track' : (color === '#f39c12' ? 'Near Limit' : 'Over Budget');
         html += '<tr><td><strong>'+cname+'</strong></td><td>'+money(b)+'</td><td>'+money(s)+'</td>';
