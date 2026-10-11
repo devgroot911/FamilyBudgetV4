@@ -216,3 +216,145 @@ h1, h2 { font-family: inherit; letter-spacing: 0; }
 [data-theme="dark"] .expense-catalog-card.selected { border-color: var(--mint-strong); background: #173b37; }
 [data-theme="dark"] .stat-card { border: 1px solid var(--line); }
 [data-theme="dark"] h2 { color: var(--ink); }
+
+/* Dashboard PowerBI & Mobile Responsive Enhancements */
+.dash-hub-panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 18px;
+  border-left: 4px solid #f39c12;
+  border-radius: 12px;
+}
+.dash-hub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.dash-hub-header h2 {
+  font-size: 18px;
+  margin: 0;
+  color: var(--ink);
+}
+.dash-hub-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dash-hub-actions .ghost-button, .dash-hub-actions .primary-button {
+  padding: 7px 14px;
+  font-size: 12px;
+  margin: 0;
+  white-space: nowrap;
+}
+.dash-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.dash-filter-field {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+.dash-filter-field label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  margin-bottom: 2px !important;
+  color: var(--ink-soft) !important;
+  display: block !important;
+  flex: none !important;
+}
+.dash-filter-field input, .dash-filter-field select {
+  width: 100% !important;
+  min-height: 38px !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  box-sizing: border-box !important;
+  outline: none;
+}
+.dash-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1100px) {
+  .dash-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .dash-hub-panel {
+    padding: 12px;
+  }
+  .dash-hub-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .dash-hub-actions {
+    width: 100%;
+    display: flex;
+  }
+  .dash-hub-actions button {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+  .dash-filter-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .dash-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .dash-stats-grid .stat-card {
+    min-height: 90px;
+    padding: 12px;
+  }
+  .dash-stats-grid .stat-value {
+    font-size: 18px !important;
+    margin-top: 4px;
+    word-break: break-word;
+  }
+  .chart-container {
+    height: 230px !important;
+  }
+  .two-col {
+    grid-template-columns: 1fr !important;
+  }
+  .field.full {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .field.full label {
+    margin-bottom: 4px !important;
+  }
+  .field.full input, .field.full select, .field.full textarea {
+    width: 100% !important;
+  }
+  .modal {
+    width: 95vw !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+}
+@media (max-width: 360px) {
+  .dash-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

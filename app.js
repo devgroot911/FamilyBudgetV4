@@ -723,24 +723,24 @@ function renderDashboard() {
   var topOutliers = advancedOutliers.slice(0, 5);
 
   
-  var html = '<div class="panel content-gap" style="background:#f8f9fa; border:1px solid #e0e0e0; padding:15px; border-left: 4px solid #f39c12;">';
-  html += '<div class="section-heading" style="margin-bottom:10px;"><div><h2 style="font-size:18px; margin:0; color:#2c3e50;">PowerBI Analytics Hub</h2></div>';
-  html += '<div style="display:flex; gap:10px;"><button class="ghost-button" onclick="resetDashboardFilters()" style="padding:6px 12px; margin:0; font-size:12px;">Reset Filters</button>';
-  html += '<button class="primary-button" onclick="exportDashboardToExcel()" style="padding:6px 12px; margin:0; font-size:12px; background:#27ae60;">Export to Excel</button></div></div>';
+  var html = '<div class="panel content-gap dash-hub-panel">';
+  html += '<div class="dash-hub-header"><div><h2>PowerBI Analytics Hub</h2></div>';
+  html += '<div class="dash-hub-actions"><button class="ghost-button" onclick="resetDashboardFilters()">Reset Filters</button>';
+  html += '<button class="primary-button" onclick="exportDashboardToExcel()" style="background:#27ae60; border-color:#27ae60;">Export to Excel</button></div></div>';
   
-  html += '<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items:end;">';
-  html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Reporting Period</label><input type="month" style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" value="'+(ds.month!=='All'?ds.month:'')+'" onchange="setDashboardFilter(\'month\', this.value || \'All\')"></div>';
+  html += '<div class="dash-filter-grid">';
+  html += '<div class="dash-filter-field"><label>Reporting Period</label><input type="month" value="'+(ds.month!=='All'?ds.month:'')+'" onchange="setDashboardFilter(\'month\', this.value || \'All\')"></div>';
   
   if (isNational) {
      var vSet = new Set();
      Object.keys(state.profiles || {}).forEach(function(u) { if (state.profiles[u].village && state.profiles[u].village !== 'All') vSet.add(state.profiles[u].village); });
-     html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Region / Village</label><select style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" onchange="setDashboardFilter(\'village\', this.value)"><option value="All">All Regions</option>';
+     html += '<div class="dash-filter-field"><label>Region / Village</label><select onchange="setDashboardFilter(\'village\', this.value)"><option value="All">All Regions</option>';
      Array.from(vSet).sort().forEach(function(v) { html += '<option value="'+escapeHtml(v)+'" '+(ds.village===v?'selected':'')+'>'+escapeHtml(v)+'</option>'; });
      html += '</select></div>';
   }
 
   if (isManager) {
-     html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Assigned Mother</label><select style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" onchange="setDashboardFilter(\'user\', this.value)"><option value="All">All Mothers</option>';
+     html += '<div class="dash-filter-field"><label>Assigned Mother</label><select onchange="setDashboardFilter(\'user\', this.value)"><option value="All">All Mothers</option>';
      Object.keys(state.profiles || {}).forEach(function(u) {
         var p = state.profiles[u];
         if (p.role === 'mother' && (ds.village === 'All' || p.village === ds.village)) {
@@ -750,14 +750,14 @@ function renderDashboard() {
      html += '</select></div>';
   }
 
-  html += '<div class="field"><label style="font-size:12px; font-weight:bold;">Expense Category</label><select style="width:100%; border:1px solid #dce7e1; border-radius:6px; padding:8px; background:#fff; color:#173b37; outline:none;" onchange="setDashboardFilter(\'category\', this.value)"><option value="All">All Categories</option>';
+  html += '<div class="dash-filter-field"><label>Expense Category</label><select onchange="setDashboardFilter(\'category\', this.value)"><option value="All">All Categories</option>';
   categories.forEach(function(c) { html += '<option value="'+escapeHtml(c.id)+'" '+(ds.category===c.id?'selected':'')+'>'+escapeHtml(c.name)+'</option>'; });
   html += '</select></div></div></div>';
 
   var variance = totalAllowance - totalSpent;
   var varColor = variance < 0 ? '#c0392b' : '#27ae60';
 
-  html += '<div class="grid stats-grid content-gap" style="grid-template-columns: repeat(5, 1fr);">' +
+  html += '<div class="dash-stats-grid content-gap">' +
     '<div class="panel stat-card" style="border-top:3px solid #3498db;"><span class="stat-label">Total Expended</span><div class="stat-value">' + money(totalSpent) + '</div><div class="stat-note">Filtered total</div></div>' +
     '<div class="panel stat-card" style="border-top:3px solid #9b59b6;"><span class="stat-label">Allocated Budget</span><div class="stat-value">' + money(totalAllowance) + '</div><div class="stat-note">Filtered total</div></div>' +
     '<div class="panel stat-card" style="border-top:3px solid '+varColor+';"><span class="stat-label">Variance (Remaining)</span><div class="stat-value" style="color:'+varColor+';">' + money(variance) + '</div><div class="stat-note">Budget - Expended</div></div>' +
@@ -907,7 +907,7 @@ function renderDashboardCharts(filteredExpenses, totalAllowance, groupBudgets, d
     chartInstances.push(new Chart(ctxPie, {
       type: 'doughnut',
       data: { labels: Object.keys(pieTotals), datasets: [{ data: Object.values(pieTotals), backgroundColor: ['#173b37', '#2eb886', '#0070f3', '#f39c12', '#9b59b6', '#e74c3c'] }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: window.innerWidth <= 600 ? 'bottom' : 'right' } } }
     }));
   }
 
@@ -943,7 +943,7 @@ function renderDashboardCharts(filteredExpenses, totalAllowance, groupBudgets, d
           { label: 'Budget', data: budgetData, backgroundColor: '#2980b9' }
         ] 
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { ticks: { maxRotation: 45, minRotation: 0, font: { size: window.innerWidth <= 600 ? 9 : 11 } } } } }
     }));
   }
 
@@ -975,7 +975,7 @@ function renderDashboardCharts(filteredExpenses, totalAllowance, groupBudgets, d
     chartInstances.push(new Chart(ctxLine, {
       type: 'line',
       data: { labels: labelsDays, datasets: datasets },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: window.innerWidth <= 600 ? 10 : 31, font: { size: window.innerWidth <= 600 ? 9 : 11 } } } } }
     }));
   }
 }
